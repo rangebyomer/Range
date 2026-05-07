@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RANGE — Functional Training</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1025">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<!-- SheetJS for xlsx parsing -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1025;--bg2:#151938;--bg3:#1c2148;--bg4:#272d5a;
+  --accent:#8b9cf7;--accent2:#6b7ee0;--accentBright:#a4b3ff;
+  --text:#e8eaf6;--text2:#8e93b8;--text3:#5a5f82;
+  --green:#4ade80;--red:#f87171;--orange:#fb923c;
+  --radius:14px;
+  --groupA:#8b9cf7;--groupB:#c084fc;--groupC:#67e8f9;
+}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;-webkit-tap-highlight-color:transparent}
+input,button,select,textarea{font-family:inherit;font-size:inherit}
+.app{max-width:500px;margin:0 auto;min-height:100vh;min-height:100dvh;padding-bottom:80px}
+
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bg4);display:flex;justify-content:center;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-inner{display:flex;max-width:500px;width:100%}
+.nav-btn{flex:1;padding:10px 0 8px;text-align:center;color:var(--text3);font-size:11px;font-weight:500;cursor:pointer;border:none;background:none;transition:.15s}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{display:block;margin:0 auto 3px;width:22px;height:22px}
+
+/* HEADER */
+.header{padding:16px 20px 8px;display:flex;align-items:center;gap:12px}
+.logo-img{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--bg4)}
+.logo-text{font-size:24px;font-weight:900;letter-spacing:3px;color:var(--accentBright)}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:2px;font-weight:500}
+.back-btn{background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:4px 8px}
+
+/* LOGIN */
+.login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:40px 20px;text-align:center}
+.login-logo{width:120px;height:120px;border-radius:50%;object-fit:cover;margin-bottom:24px;border:3px solid var(--bg4)}
+.login-title{font-size:42px;font-weight:900;letter-spacing:6px;color:var(--accentBright);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);letter-spacing:3px;margin-bottom:48px}
+.google-btn{display:flex;align-items:center;gap:12px;background:#fff;color:#333;border:none;border-radius:50px;padding:14px 32px;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:.15s}
+.google-btn:active{transform:scale(.97)}
+.google-btn svg{width:20px;height:20px}
+
+/* LOADING */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;gap:16px;color:var(--text2)}
+.spinner{width:36px;height:36px;border:3px solid var(--bg4);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SECTIONS */
+.section-title{font-size:12px;color:var(--text3);font-weight:600;margin:16px 20px 8px;letter-spacing:1.5px;text-transform:uppercase}
+.chips{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px;margin-top:8px}
+.chip{padding:10px 18px;border-radius:50px;background:var(--bg3);font-size:14px;font-weight:600;cursor:pointer;border:2px solid transparent;color:var(--text2);transition:.15s}
+.chip:active{transform:scale(.96)}
+.chip.active{border-color:var(--accent);background:rgba(139,156,247,.1);color:var(--accent)}
+
+/* WORKOUT TYPE GRID */
+.wt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-top:12px}
+.wt-card{background:var(--bg2);border-radius:var(--radius);padding:18px 10px;text-align:center;cursor:pointer;border:2px solid var(--bg4);transition:.15s}
+.wt-card:active{transform:scale(.97)}
+.wt-card.active{border-color:var(--accent);background:rgba(139,156,247,.08)}
+.wt-icon{font-size:26px;margin-bottom:4px}
+.wt-name{font-size:14px;font-weight:700}
+.wt-count{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* LOCATION TOGGLE */
+.loc-toggle{display:flex;margin:16px 16px 0;border-radius:50px;overflow:hidden;background:var(--bg3);border:1px solid var(--bg4)}
+.loc-btn{flex:1;padding:11px;text-align:center;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:.15s}
+.loc-btn.active{background:var(--accent2);color:#fff}
+
+/* DATE PICKER */
+.date-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;margin-top:8px}
+.date-bar label{font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap}
+.date-input{flex:1;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
+.date-input:focus{border-color:var(--accent)}
+.today-btn{background:var(--accent2);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.today-btn:active{transform:scale(.96)}
+
+/* SUPERSET GROUPS */
+.group-label{display:flex;align-items:center;gap:8px;padding:14px 20px 4px}
+.group-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--bg)}
+.group-badge.a{background:var(--groupA)}.group-badge.b{background:var(--groupB)}.group-badge.c{background:var(--groupC)}
+.group-text{font-size:12px;color:var(--text3);font-weight:600}
+.group-line{flex:1;height:1px;background:var(--bg4)}
+
+/* EXERCISE CARDS */
+.ex-card{background:var(--bg2);border-radius:var(--radius);margin:6px 16px;overflow:hidden;border:1px solid var(--bg4)}
+.ex-card.ga{border-right:3px solid var(--groupA)}.ex-card.gb{border-right:3px solid var(--groupB)}.ex-card.gc{border-right:3px solid var(--groupC)}
+.ex-header{padding:14px 16px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.ex-num{min-width:26px;height:26px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0}
+.ex-name{flex:1;font-size:14px;font-weight:600;line-height:1.5}
+.ex-chevron{color:var(--text3);font-size:18px;flex-shrink:0}
+
+/* SETS */
+.sets-area{padding:0 16px 14px;border-top:1px solid var(--bg4)}
+.sets-header{display:flex;gap:8px;margin:10px 0 2px}
+.sets-header-label{font-size:10px;color:var(--text3);font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.set-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.set-label{min-width:28px;font-size:12px;color:var(--text3);font-weight:600;text-align:center}
+.set-input{flex:1;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
+.set-input:focus{border-color:var(--accent)}
+.set-notes-row{display:flex;margin-top:4px;padding-right:36px;padding-left:38px}
+.set-notes{flex:1;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;outline:none;transition:.15s}
+.set-notes:focus{border-color:var(--accent);color:var(--text)}
+.set-notes::placeholder{color:var(--text3)}
+.set-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:6px;width:30px;transition:.15s}
+.set-del:active{color:var(--red)}
+.add-set-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;margin-top:10px;background:var(--bg3);border:1px dashed var(--bg4);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+.add-set-btn:active{background:var(--bg4);border-color:var(--accent)}
+
+/* SAVE BAR */
+.save-bar{position:fixed;bottom:60px;left:0;right:0;padding:10px 16px;z-index:99}
+.save-bar-inner{max-width:500px;margin:0 auto}
+.save-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 24px rgba(107,126,224,.3);letter-spacing:1px}
+.save-btn:active{transform:scale(.97)}
+.save-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* CARDIO */
+.cardio-toggle{display:flex;margin:16px 16px 0;border-radius:50px;overflow:hidden;background:var(--bg3);border:1px solid var(--bg4)}
+.cardio-toggle-btn{flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:.15s;letter-spacing:1px}
+.cardio-toggle-btn.active{background:var(--accent2);color:#fff}
+.cardio-time-row{display:flex;gap:10px;padding:0 16px;margin-top:14px}
+.cardio-time-box{flex:1;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);padding:12px;text-align:center}
+.cardio-time-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.cardio-time-input{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px;color:var(--text);font-size:16px;text-align:center;outline:none;-webkit-appearance:none}
+.cardio-time-input:focus{border-color:var(--accent)}
+.cardio-ex-list{margin:12px 16px;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--bg4);overflow:hidden}
+.cardio-ex-item{padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--bg4)}
+.cardio-ex-item:last-child{border-bottom:none}
+.cardio-notes-wrap{padding:0 16px;margin-top:10px}
+.cardio-notes-input{width:100%;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);padding:12px 14px;color:var(--text);font-size:14px;outline:none;min-height:60px;resize:none}
+.cardio-notes-input:focus{border-color:var(--accent)}
+.cardio-notes-input::placeholder{color:var(--text3)}
+
+/* HISTORY */
+.hist-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin:8px 16px;border:1px solid var(--bg4);position:relative}
+.hist-date{font-size:13px;color:var(--accent);font-weight:600}
+.hist-info{font-size:14px;font-weight:600;margin-top:4px}
+.hist-detail{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
+.hist-note{font-style:italic;color:var(--text3);font-size:11px}
+.hist-del{position:absolute;top:12px;left:12px;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px}
+.hist-del:active{color:var(--red)}
+
+/* PEAK */
+.peak-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:50px;margin-right:8px;letter-spacing:1px}
+
+/* ADMIN */
+.admin-section{padding:16px}
+.admin-card{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--bg4)}
+.admin-card h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--accent)}
+.admin-card p{font-size:12px;color:var(--text2);line-height:1.6}
+.file-upload{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.file-upload-btn{background:var(--bg3);border:2px dashed var(--bg4);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;transition:.15s}
+.file-upload-btn:active{border-color:var(--accent)}
+.file-upload-btn.has-file{border-color:var(--green);color:var(--green)}
+input[type="file"]{display:none}
+.upload-submit{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;padding:12px 24px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.upload-submit:disabled{opacity:.4;cursor:not-allowed}
+
+.user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
+.user-row:last-child{border-bottom:none}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg4)}
+.user-info{flex:1}
+.user-name{font-size:13px;font-weight:600}
+.user-email{font-size:11px;color:var(--text3)}
+.user-badge{font-size:10px;padding:3px 10px;border-radius:50px;font-weight:700}
+.user-badge.admin{background:rgba(139,156,247,.15);color:var(--accent)}
+.user-badge.trainee{background:rgba(74,222,128,.1);color:var(--green)}
+
+/* MISC */
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:10px 24px;border-radius:50px;font-size:14px;font-weight:600;z-index:200;animation:fadeInOut 2.5s ease;pointer-events:none;white-space:nowrap}
+.toast.error{background:var(--red)}
+@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+
+.danger-btn{background:none;border:1px solid var(--red);color:var(--red);padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;margin:12px 16px}
+.danger-btn:active{background:rgba(248,113,113,.1)}
+
+.storage-info{padding:12px 16px;margin:8px 16px;background:var(--bg3);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6}
+.storage-info strong{color:var(--text)}
+
+.cycle-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin:8px 16px;border:1px solid var(--bg4);display:flex;align-items:center;justify-content:space-between}
+.cycle-card .cycle-name{font-size:15px;font-weight:700}
+.cycle-card .cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.cycle-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:8px}
+.cycle-del:active{color:var(--red)}
+
+.saving-overlay{position:fixed;inset:0;background:rgba(13,16,37,.8);display:flex;align-items:center;justify-content:center;z-index:300;flex-direction:column;gap:16px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// =====================================================
+// FIREBASE INIT
+// =====================================================
+firebase.initializeApp({
+  apiKey: "AIzaSyDMYFQq0dWlLE8CgD0em1fQSE2BkitvSWs",
+  authDomain: "range-studio-c5062.firebaseapp.com",
+  projectId: "range-studio-c5062",
+  storageBucket: "range-studio-c5062.firebasestorage.app",
+  messagingSenderId: "433946517731",
+  appId: "1:433946517731:web:e3d77ed45f3d289d93a5d6"
+});
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+// Admin emails
+var ADMIN_EMAILS = ["rangebyomer@gmail.com","inbaltsa@gmail.com"];
+function isAdmin(email) {
+  return ADMIN_EMAILS.indexOf((email||"").toLowerCase()) >= 0;
+}
+
+// =====================================================
+// DB HELPERS
+// =====================================================
+var DB = {
+  // CYCLES
+  saveCycle: function(cycleData) {
+    return db.collection("cycles").doc(cycleData.id).set(cycleData);
+  },
+  loadCycles: function() {
+    return db.collection("cycles").orderBy("number","desc").get().then(function(snap) {
+      return snap.docs.map(function(d) { return d.data(); });
+    });
+  },
+  deleteCycle: function(id) {
+    return db.collection("cycles").doc(id).delete();
+  },
+  // LOGS
+  saveLog: function(uid, log) {
+    return db.collection("users").doc(uid).collection("logs").doc(log.id).set(log);
+  },
+  loadLogs: function(uid) {
+    return db.collection("users").doc(uid).collection("logs").orderBy("date","desc").limit(100).get().then(function(snap) {
+      return snap.docs.map(function(d) { return d.data(); });
+    });
+  },
+  deleteLog: function(uid, logId) {
+    return db.collection("users").doc(uid).collection("logs").doc(logId).delete();
+  },
+  // USER PROFILE
+  saveUser: function(uid, data) {
+    return db.collection("users").doc(uid).set(data, {merge:true});
+  },
+  loadUsers: function() {
+    return db.collection("users").get().then(function(snap) {
+      return snap.docs.map(function(d) { return Object.assign({uid:d.id}, d.data()); });
+    });
+  }
+};
+</script>
+
+<script>
+// =====================================================
+// XLSX PARSER — reads wave template into cycle data
+// =====================================================
+function parseWaveXlsx(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var wb = XLSX.read(e.target.result, {type:"array"});
+        
+        // Read metadata
+        var metaSheet = wb.Sheets[wb.SheetNames.find(function(n){return n.indexOf("מטא")>=0;}) || wb.SheetNames[1]];
+        var meta = {};
+        if (metaSheet) {
+          // Read C column values (row 3 onward)
+          var keys = ["cycle_number","cycle_name","start_date","num_weeks","coach_name","notes"];
+          for (var i = 0; i < keys.length; i++) {
+            var cell = metaSheet["C"+(i+3)];
+            meta[keys[i]] = cell ? String(cell.v||"") : "";
+          }
+        }
+        
+        // Read week sheets
+        var weeks = [];
+        wb.SheetNames.forEach(function(name) {
+          var weekMatch = name.match(/שבוע\s*(\d+)/);
+          if (!weekMatch) return;
+          var weekNum = parseInt(weekMatch[1]);
+          var ws = wb.Sheets[name];
+          
+          // Check peak flag
+          var peakCell = ws["B2"];
+          var isPeak = peakCell && String(peakCell.v||"").toUpperCase() === "TRUE";
+          
+          // Parse exercises from columns
+          // A = workout1 exercises, C = workout2 exercises, E = cardio, G = flexibility
+          var workout1 = [], workout2 = [], cardio = [], flexibility = [];
+          
+          for (var r = 5; r <= 20; r++) {
+            var a = ws["A"+r]; 
+            var c = ws["C"+r]; 
+            var e = ws["E"+r]; 
+            var g = ws["G"+r];
+            
+            if (a && a.v && !String(a.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(a.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
+              workout1.push(String(a.v).trim());
+            }
+            if (c && c.v && !String(c.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(c.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
+              workout2.push(String(c.v).trim());
+            }
+            if (e && e.v && !String(e.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(e.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
+              cardio.push(String(e.v).trim());
+            }
+            if (g && g.v && !String(g.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(g.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
+              flexibility.push(String(g.v).trim());
+            }
+          }
+          
+          // Filter out placeholder text
+          var filterPlaceholder = function(arr) {
+            return arr.filter(function(s) { return s && s.indexOf("כתבו כאן") < 0 && s.indexOf("תרגיל ") < 0 && s.length > 2; });
+          };
+          
+          weeks.push({
+            weekNum: weekNum,
+            peak: isPeak,
+            gym: {
+              workout1: filterPlaceholder(workout1),
+              workout2: filterPlaceholder(workout2),
+              cardio: filterPlaceholder(cardio),
+              flexibility: filterPlaceholder(flexibility)
+            }
+          });
+        });
+        
+        // Read home workouts if sheet exists
+        var homeSheet = wb.Sheets[wb.SheetNames.find(function(n){return n.indexOf("בית")>=0;})];
+        var homeExercises = {workout1:[], workout2:[], cardio:[]};
+        if (homeSheet) {
+          for (var r = 3; r <= 15; r++) {
+            var a = homeSheet["A"+r], b = homeSheet["B"+r], c = homeSheet["C"+r];
+            if (a && a.v && String(a.v).indexOf("←") < 0) homeExercises.workout1.push(String(a.v).trim());
+            if (b && b.v && String(b.v).indexOf("←") < 0) homeExercises.workout2.push(String(b.v).trim());
+            if (c && c.v && String(c.v).indexOf("←") < 0) homeExercises.cardio.push(String(c.v).trim());
+          }
+        }
+        
+        weeks.sort(function(a,b){return a.weekNum-b.weekNum;});
+        
+        var cycleId = "cycle_" + (meta.cycle_number || Date.now());
+        resolve({
+          id: cycleId,
+          number: parseInt(meta.cycle_number) || 0,
+          name: meta.cycle_name || ("Cycle " + (meta.cycle_number||"?")),
+          startDate: meta.start_date || "",
+          coachName: meta.coach_name || "",
+          notes: meta.notes || "",
+          weeks: weeks,
+          homeExercises: homeExercises,
+          createdAt: new Date().toISOString()
+        });
+      } catch(err) {
+        reject(err);
+      }
+    };
+    reader.onerror = function() { reject(new Error("Failed to read file")); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+<script type="text/babel">
+
+function GoogleLogo() {
+  return <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>;
+}
+
+function App() {
+  const [user, setUser] = React.useState(undefined); // undefined=loading, null=logged out
+  const [tab, setTab] = React.useState("home");
+  const [toast, setToast] = React.useState(null);
+  const [cycles, setCycles] = React.useState([]);
+  const [logs, setLogs] = React.useState([]);
+  const [allUsers, setAllUsers] = React.useState([]);
+  
+  // Workout selection state
+  const [selCycleId, setSelCycleId] = React.useState(null);
+  const [selWeek, setSelWeek] = React.useState(null);
+  const [selType, setSelType] = React.useState(null);
+  const [loc, setLoc] = React.useState("gym");
+  const [workoutDate, setWorkoutDate] = React.useState(new Date().toISOString().split("T")[0]);
+  
+  // Exercise state
+  const [curSets, setCurSets] = React.useState({});
+  const [openEx, setOpenEx] = React.useState({});
+  const [cardioMode, setCardioMode] = React.useState("amrap");
+  const [cardioData, setCardioData] = React.useState({workTime:"",restTime:"",notes:""});
+  
+  // Admin state
+  const [uploadFile, setUploadFile] = React.useState(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+
+  // Auth listener
+  React.useEffect(() => {
+    return auth.onAuthStateChanged(function(u) {
+      if (u) {
+        DB.saveUser(u.uid, {
+          email: u.email,
+          displayName: u.displayName,
+          photoURL: u.photoURL,
+          role: isAdmin(u.email) ? "admin" : "trainee",
+          lastLogin: new Date().toISOString()
+        });
+        setUser(u);
+      } else {
+        setUser(null);
+      }
+    });
+  }, []);
+
+  // Load data when user logs in
+  React.useEffect(() => {
+    if (!user) return;
+    DB.loadCycles().then(setCycles).catch(console.error);
+    DB.loadLogs(user.uid).then(setLogs).catch(console.error);
+    if (isAdmin(user.email)) {
+      DB.loadUsers().then(setAllUsers).catch(console.error);
+    }
+  }, [user]);
+
+  // Auto-select latest cycle
+  React.useEffect(() => {
+    if (cycles.length && !selCycleId) setSelCycleId(cycles[0].id);
+  }, [cycles]);
+
+  const flash = (msg, err) => { setToast({msg, err}); setTimeout(() => setToast(null), 2500); };
+  const signIn = () => {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithRedirect(provider);
+  };
+  const signOut = () => { auth.signOut(); setUser(null); setTab("home"); };
+
+  const cycle = cycles.find(c => c.id === selCycleId);
+  const week = cycle ? (cycle.weeks||[]).find(w => w.weekNum === selWeek) : null;
+
+  // Type mapping — the xlsx uses workout1/workout2, display as before
+  var TN = {workout1:"אימון #1",workout2:"אימון #2",cardio:"קרדיו",flexibility:"גמישות"};
+  var TI = {workout1:"🏋️",workout2:"💪",cardio:"🔥",flexibility:"🧘"};
+
+  const getExercises = () => {
+    if (!week || !selType) return [];
+    if (loc === "home" && cycle.homeExercises) {
+      var homeKey = selType === "flexibility" ? null : selType;
+      if (homeKey && cycle.homeExercises[homeKey] && cycle.homeExercises[homeKey].length > 0) {
+        return cycle.homeExercises[homeKey];
+      }
+    }
+    return week.gym[selType] || [];
+  };
+  const exercises = getExercises();
+
+  const cardioAmrap = selType==="cardio" ? exercises.slice(0,4) : [];
+  const cardioTabata = selType==="cardio" ? exercises.slice(4) : [];
+  const cardioExercises = cardioMode==="amrap" ? cardioAmrap : cardioTabata;
+
+  const hasData = selType==="cardio"
+    ? (cardioData.workTime || cardioData.restTime || cardioData.notes)
+    : Object.values(curSets).some(sets => sets && sets.some(s => s.weight || s.reps));
+
+  // Superset grouping
+  function getGroup(type, idx) {
+    if (type === "cardio" || type === "flexibility") return null;
+    if (idx <= 1) return "a";
+    if (idx <= 3) return "b";
+    return "c";
+  }
+  function isGroupStart(type, idx) {
+    if (type === "cardio" || type === "flexibility") return false;
+    return idx === 0 || idx === 2 || idx === 4;
+  }
+
+  const goBack = () => {
+    if (selType) { setSelType(null); setCurSets({}); setOpenEx({}); setCardioMode("amrap"); setCardioData({workTime:"",restTime:"",notes:""}); }
+    else if (selWeek) setSelWeek(null);
+  };
+  const toggleEx = (idx) => {
+    setOpenEx(p => ({...p, [idx]: !p[idx]}));
+    if (!curSets[idx]) setCurSets(p => ({...p, [idx]: [{weight:"",reps:"",notes:""}]}));
+  };
+  const updateSet = (ei, si, f, v) => {
+    setCurSets(p => {var n={...p}; n[ei]=[...n[ei]]; n[ei][si]={...n[ei][si],[f]:v}; return n;});
+  };
+  const addSet = (ei) => {
+    setCurSets(p => {var n={...p}; var a=n[ei]||[]; var l=a[a.length-1]||{weight:"",reps:"",notes:""}; n[ei]=[...a,{weight:l.weight,reps:l.reps,notes:""}]; return n;});
+  };
+  const removeSet = (ei, si) => {
+    setCurSets(p => {var n={...p}; n[ei]=n[ei].filter((_,i)=>i!==si); if(!n[ei].length) delete n[ei]; return n;});
+  };
+
+  const saveWorkout = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      var log;
+      if (selType === "cardio") {
+        if (!cardioData.workTime && !cardioData.restTime && !cardioData.notes) { flash("אין נתונים",true); setSaving(false); return; }
+        log = {
+          id: "l"+Date.now(),
+          date: workoutDate,
+          time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
+          cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
+          type: "cardio", location: loc, cardioMode: cardioMode,
+          cardioExercises: cardioExercises,
+          workTime: cardioData.workTime, restTime: cardioData.restTime, cardioNotes: cardioData.notes
+        };
+      } else {
+        var exLogs = [];
+        Object.entries(curSets).forEach(([ei,sets]) => {
+          var filled = sets.filter(s => s.reps||s.weight||s.notes);
+          if (filled.length) exLogs.push({name:exercises[parseInt(ei)], sets:filled.map(s=>({weight:s.weight?parseFloat(s.weight):null,reps:s.reps?parseInt(s.reps):null,notes:s.notes||null}))});
+        });
+        if (!exLogs.length) { flash("אין נתונים",true); setSaving(false); return; }
+        log = {
+          id: "l"+Date.now(),
+          date: workoutDate,
+          time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
+          cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
+          type: selType, location: loc, exercises: exLogs
+        };
+      }
+      await DB.saveLog(user.uid, log);
+      setLogs(p => [log, ...p]);
+      flash("האימון נשמר! 💪");
+      setCurSets({}); setOpenEx({});
+      setCardioData({workTime:"",restTime:"",notes:""});
+    } catch(err) {
+      console.error(err);
+      flash("שגיאה בשמירה",true);
+    }
+    setSaving(false);
+  };
+
+  const deleteLog = async (id) => {
+    if (!confirm("למחוק את האימון?")) return;
+    try {
+      await DB.deleteLog(user.uid, id);
+      setLogs(p => p.filter(l => l.id !== id));
+      flash("נמחק");
+    } catch(err) { flash("שגיאה",true); }
+  };
+
+  // Admin: upload cycle
+  const handleUpload = async () => {
+    if (!uploadFile) return;
+    setUploading(true);
+    try {
+      var cycleData = await parseWaveXlsx(uploadFile);
+      await DB.saveCycle(cycleData);
+      setCycles(p => [cycleData, ...p.filter(c=>c.id!==cycleData.id)]);
+      setUploadFile(null);
+      flash("הסייקל הועלה בהצלחה! 🎉");
+    } catch(err) {
+      console.error(err);
+      flash("שגיאה בקריאת הקובץ: " + err.message, true);
+    }
+    setUploading(false);
+  };
+
+  const deleteCycle = async (id) => {
+    if (!confirm("למחוק את הסייקל?")) return;
+    try {
+      await DB.deleteCycle(id);
+      setCycles(p => p.filter(c => c.id !== id));
+      if (selCycleId === id) setSelCycleId(null);
+      flash("הסייקל נמחק");
+    } catch(err) { flash("שגיאה",true); }
+  };
+
+  // =================== RENDER ===================
+
+  if (user === undefined) return <div className="loading-screen"><div className="spinner"></div><div>טוען...</div></div>;
+
+  if (!user) return (
+    <div className="login-screen">
+      <img className="login-logo" src="rangeicon.jpg" alt="RANGE" onError={(e)=>{e.target.style.display='none'}} />
+      <div className="login-title">RANGE</div>
+      <div className="login-sub">FUNCTIONAL TRAINING</div>
+      <button className="google-btn" onClick={signIn}>
+        <GoogleLogo />
+        התחברות עם Google
+      </button>
+    </div>
+  );
+
+  var admin = isAdmin(user.email);
+
+  return (
+    <div className="app">
+      {toast && <div className={"toast"+(toast.err?" error":"")}>{toast.msg}</div>}
+      {saving && <div className="saving-overlay"><div className="spinner"></div><div style={{color:"var(--text2)"}}>שומר...</div></div>}
+
+      {/* ===== HOME: SELECT ===== */}
+      {tab==="home" && !selType && <div>
+        <div className="header">
+          {selWeek && <button className="back-btn" onClick={goBack}>→</button>}
+          <img className="logo-img" src="rangeicon.jpg" alt="RANGE" onError={(e)=>{e.target.style.display='none'}} />
+          <div>
+            <div className="logo-text">RANGE</div>
+            <div className="logo-sub">FUNCTIONAL TRAINING</div>
+          </div>
+        </div>
+
+        {!cycles.length ? (
+          <div className="empty">
+            <div className="empty-icon">📋</div>
+            <div>{admin ? "עדיין אין סייקלים. לכי לטאב ניהול להעלות סייקל" : "עדיין אין סייקלים. המאמן יעלה בקרוב!"}</div>
+          </div>
+        ) : (<div>
+          <div className="section-title">בחרי סייקל</div>
+          <div className="chips">
+            {cycles.map(c=><div key={c.id} className={"chip"+(selCycleId===c.id?" active":"")} onClick={()=>{setSelCycleId(c.id);setSelWeek(null);setSelType(null);}}>{c.name}</div>)}
+          </div>
+
+          {cycle && <div>
+            <div className="section-title">בחרי שבוע</div>
+            <div className="chips">
+              {(cycle.weeks||[]).map(w=><div key={w.weekNum} className={"chip"+(selWeek===w.weekNum?" active":"")} onClick={()=>{setSelWeek(w.weekNum);setSelType(null);}}>
+                {w.peak && <span className="peak-badge">PEAK</span>}
+                {"שבוע "+w.weekNum}
+              </div>)}
+            </div>
+          </div>}
+
+          {selWeek && week && <div>
+            <div className="section-title">בחרי אימון</div>
+            <div className="wt-grid">
+              {["workout1","workout2","cardio","flexibility"].map(t=>{
+                var exCount = (week.gym[t]||[]).length;
+                if (!exCount) return null;
+                return <div key={t} className={"wt-card"+(selType===t?" active":"")} onClick={()=>{setSelType(t);setCurSets({});setOpenEx({});setLoc("gym");setCardioMode("amrap");setCardioData({workTime:"",restTime:"",notes:""});setWorkoutDate(new Date().toISOString().split("T")[0]);}}>
+                  <div className="wt-icon">{TI[t]}</div>
+                  <div className="wt-name">{TN[t]}</div>
+                  <div className="wt-count">{exCount+" תרגילים"}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+        </div>)}
+      </div>}
+
+      {/* ===== WORKOUT ===== */}
+      {tab==="home" && selType && <div>
+        <div className="header">
+          <button className="back-btn" onClick={goBack}>→</button>
+          <img className="logo-img" src="rangeicon.jpg" alt="R" style={{width:34,height:34}} onError={(e)=>{e.target.style.display='none'}} />
+          <div>
+            <div style={{fontSize:18,fontWeight:800}}>{TI[selType]+" "+TN[selType]}</div>
+            <div style={{fontSize:12,color:"var(--text2)"}}>{cycle.name+" · שבוע "+selWeek+(week.peak?" · PEAK WEEK":"")}</div>
+          </div>
+        </div>
+
+        {/* Date picker */}
+        <div className="date-bar">
+          <label>📅 תאריך:</label>
+          <input className="date-input" type="date" value={workoutDate} onChange={e=>setWorkoutDate(e.target.value)} />
+          <button className="today-btn" onClick={()=>setWorkoutDate(new Date().toISOString().split("T")[0])}>היום</button>
+        </div>
+
+        {/* Location toggle */}
+        <div className="loc-toggle">
+          <button className={"loc-btn"+(loc==="gym"?" active":"")} onClick={()=>setLoc("gym")}>🏢 סטודיו</button>
+          <button className={"loc-btn"+(loc==="home"?" active":"")} onClick={()=>setLoc("home")}>🏠 בית</button>
+        </div>
+
+        {/* CARDIO MODE */}
+        {selType==="cardio" && <div>
+          <div className="cardio-toggle">
+            <button className={"cardio-toggle-btn"+(cardioMode==="amrap"?" active":"")} onClick={()=>{setCardioMode("amrap");setCardioData({workTime:"",restTime:"",notes:""});}}>AMRAP</button>
+            <button className={"cardio-toggle-btn"+(cardioMode==="tabata"?" active":"")} onClick={()=>{setCardioMode("tabata");setCardioData({workTime:"",restTime:"",notes:""});}}>TABATA</button>
+          </div>
+          <div className="cardio-time-row">
+            <div className="cardio-time-box">
+              <div className="cardio-time-label">⏱ זמן עבודה</div>
+              <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.workTime} onChange={e=>setCardioData(p=>({...p,workTime:e.target.value}))} />
+            </div>
+            <div className="cardio-time-box">
+              <div className="cardio-time-label">😮‍💨 זמן מנוחה</div>
+              <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.restTime} onChange={e=>setCardioData(p=>({...p,restTime:e.target.value}))} />
+            </div>
+          </div>
+          <div className="cardio-ex-list">
+            {cardioExercises.map((ex,i)=>
+              <div className="cardio-ex-item" key={i}>
+                <div className="ex-num">{i+1}</div>
+                <div className="ex-name">{ex}</div>
+              </div>
+            )}
+          </div>
+          <div className="cardio-notes-wrap">
+            <textarea className="cardio-notes-input" placeholder="הערות..." value={cardioData.notes} onChange={e=>setCardioData(p=>({...p,notes:e.target.value}))} />
+          </div>
+        </div>}
+
+        {/* STRENGTH / FLEXIBILITY */}
+        {selType!=="cardio" && <div style={{marginTop:12}}>
+          {exercises.map((ex,idx) => {
+            var grp = getGroup(selType, idx);
+            var showLabel = isGroupStart(selType, idx);
+            return <div key={idx}>
+              {showLabel && <div className="group-label">
+                <div className={"group-badge "+grp}>{({a:"A",b:"B",c:"C"})[grp]}</div>
+                <div className="group-text">{({a:"סופרסט A",b:"סופרסט B",c:"סופרסט C"})[grp]}</div>
+                <div className="group-line"></div>
+              </div>}
+              <div className={"ex-card"+(grp?" g"+grp:"")}>
+                <div className="ex-header" onClick={()=>toggleEx(idx)}>
+                  <div className="ex-num">{idx+1}</div>
+                  <div className="ex-name">{ex}</div>
+                  <span className="ex-chevron">{openEx[idx]?"▴":"▾"}</span>
+                </div>
+                {openEx[idx] && <div className="sets-area">
+                  <div className="sets-header">
+                    <div className="set-label"></div>
+                    <div style={{flex:1}} className="sets-header-label">משקל (ק"ג)</div>
+                    <div style={{flex:1}} className="sets-header-label">חזרות</div>
+                    <div style={{width:30}}></div>
+                  </div>
+                  {(curSets[idx]||[]).map((s,si)=><div key={si}>
+                    <div className="set-row">
+                      <div className="set-label">{si+1}</div>
+                      <input className="set-input" type="number" inputMode="decimal" placeholder="—" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                      <input className="set-input" type="number" inputMode="numeric" placeholder="—" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                      <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
+                    </div>
+                    <div className="set-notes-row">
+                      <input className="set-notes" type="text" placeholder="הערות..." value={s.notes} onChange={e=>updateSet(idx,si,"notes",e.target.value)} />
+                    </div>
+                  </div>)}
+                  <button className="add-set-btn" onClick={()=>addSet(idx)}>+ הוסף סט</button>
+                </div>}
+              </div>
+            </div>;
+          })}
+        </div>}
+
+        {hasData && <div className="save-bar"><div className="save-bar-inner">
+          <button className="save-btn" onClick={saveWorkout} disabled={saving}>שמור אימון</button>
+        </div></div>}
+      </div>}
+
+      {/* ===== HISTORY ===== */}
+      {tab==="history" && <div>
+        <div className="header">
+          <img className="logo-img" src="rangeicon.jpg" alt="R" style={{width:34,height:34}} onError={(e)=>{e.target.style.display='none'}} />
+          <div className="logo-text" style={{fontSize:22}}>היסטוריה</div>
+        </div>
+        {!logs.length ? <div className="empty"><div className="empty-icon">📋</div><div>עדיין אין אימונים שמורים</div></div> :
+        logs.map(log=><div className="hist-card" key={log.id}>
+          <button className="hist-del" onClick={()=>deleteLog(log.id)}>🗑</button>
+          <div className="hist-date">{log.date+" · "+log.time}</div>
+          <div className="hist-info">{TN[log.type]||log.type}{log.cardioMode?" · "+(log.cardioMode==="amrap"?"AMRAP":"TABATA"):""}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"בית")}</div>
+          {log.type==="cardio" ? <div className="hist-detail">
+            {log.workTime && <span>{"⏱ עבודה: "+log.workTime+" "}</span>}
+            {log.restTime && <span>{"😮‍💨 מנוחה: "+log.restTime}</span>}
+            {(log.cardioExercises||[]).map((ex,i)=><div key={i} style={{marginTop:i===0?4:0}}>{(i+1)+". "+ex}</div>)}
+            {log.cardioNotes && <div className="hist-note" style={{marginTop:4}}>{"💬 "+log.cardioNotes}</div>}
+          </div> :
+          <div className="hist-detail">{(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+            <strong>{(ex.name||"").substring(0,50)}</strong><br/>
+            {(ex.sets||[]).map((s,si)=><span key={si}>
+              {(s.weight?s.weight+"kg":"")+" "+(s.reps?"×"+s.reps:"")}
+              {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+              {si<ex.sets.length-1?" | ":""}
+            </span>)}
+          </div>)}</div>}
+        </div>)}
+      </div>}
+
+      {/* ===== ADMIN / SETTINGS ===== */}
+      {tab==="settings" && <div>
+        <div className="header">
+          <img className="logo-img" src="rangeicon.jpg" alt="R" style={{width:34,height:34}} onError={(e)=>{e.target.style.display='none'}} />
+          <div className="logo-text" style={{fontSize:22}}>{admin ? "ניהול" : "הגדרות"}</div>
+        </div>
+
+        {/* User info */}
+        <div className="storage-info">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src={user.photoURL} style={{width:32,height:32,borderRadius:"50%"}} onError={e=>{e.target.style.display='none'}} />
+            <div>
+              <strong>{user.displayName}</strong>
+              <div style={{fontSize:11,color:"var(--text3)"}}>{user.email}{admin?" · אדמין":""}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin: Upload cycle */}
+        {admin && <div className="admin-section">
+          <div className="admin-card">
+            <h3>📤 העלאת סייקל חדש</h3>
+            <p>העלי קובץ xlsx מתבנית הסייקל. הקובץ ייקרא אוטומטית ויתווסף למערכת.</p>
+            <div className="file-upload">
+              <label className={"file-upload-btn"+(uploadFile?" has-file":"")} htmlFor="cycle-file">
+                {uploadFile ? ("✅ "+uploadFile.name) : "📁 בחרי קובץ xlsx"}
+              </label>
+              <input id="cycle-file" type="file" accept=".xlsx,.xls" onChange={e=>{if(e.target.files[0])setUploadFile(e.target.files[0]);}} />
+              <button className="upload-submit" onClick={handleUpload} disabled={!uploadFile||uploading}>{uploading?"מעלה...":"העלה סייקל"}</button>
+            </div>
+          </div>
+
+          <div className="admin-card">
+            <h3>📊 סייקלים קיימים</h3>
+            {cycles.length ? cycles.map(c=><div className="cycle-card" key={c.id} style={{margin:"8px 0"}}>
+              <div>
+                <div className="cycle-name">{c.name}</div>
+                <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"+(c.coachName?" · "+c.coachName:"")}</div>
+              </div>
+              <button className="cycle-del" onClick={()=>deleteCycle(c.id)}>🗑</button>
+            </div>) : <p>אין סייקלים</p>}
+          </div>
+
+          <div className="admin-card">
+            <h3>👥 משתמשים ({allUsers.length})</h3>
+            {allUsers.map(u=><div className="user-row" key={u.uid}>
+              <img className="user-avatar" src={u.photoURL} onError={e=>{e.target.style.background="var(--bg4)"}} />
+              <div className="user-info">
+                <div className="user-name">{u.displayName||"—"}</div>
+                <div className="user-email">{u.email}</div>
+              </div>
+              <span className={"user-badge "+(u.role||"trainee")}>{u.role==="admin"?"אדמין":"מתאמן/ת"}</span>
+            </div>)}
+          </div>
+        </div>}
+
+        <div className="storage-info" style={{marginTop:16}}>
+          <strong>{logs.length}</strong> אימונים שמורים<br/>
+          הנתונים נשמרים ב-Firebase (ענן) ונגישים מכל מכשיר.
+        </div>
+
+        <button className="add-set-btn" style={{margin:"12px 16px",width:"calc(100% - 32px)"}} onClick={signOut}>🚪 התנתק/י</button>
+      </div>}
+
+      {/* ===== NAV ===== */}
+      <div className="nav"><div className="nav-inner">
+        <button className={"nav-btn"+(tab==="home"?" active":"")} onClick={()=>{setTab("home");setSelType(null);}}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>אימון
+        </button>
+        <button className={"nav-btn"+(tab==="history"?" active":"")} onClick={()=>setTab("history")}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>היסטוריה
+        </button>
+        <button className={"nav-btn"+(tab==="settings"?" active":"")} onClick={()=>setTab("settings")}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>{admin?"ניהול":"הגדרות"}
+        </button>
+      </div></div>
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
