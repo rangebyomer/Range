@@ -448,7 +448,10 @@ function App() {
   const flash = (msg, err) => { setToast({msg, err}); setTimeout(() => setToast(null), 2500); };
   const signIn = () => {
     var provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithRedirect(provider);
+    auth.signInWithPopup(provider).catch(function(err) {
+      console.error("Login error:", err);
+      flash("שגיאה בהתחברות: " + err.message, true);
+    });
   };
   const signOut = () => { auth.signOut(); setUser(null); setTab("home"); };
 
