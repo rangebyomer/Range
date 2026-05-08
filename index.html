@@ -16,7 +16,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
+  
 <!-- SheetJS for xlsx parsing -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
@@ -245,6 +246,10 @@ firebase.initializeApp({
   messagingSenderId: "433946517731",
   appId: "1:433946517731:web:e3d77ed45f3d289d93a5d6"
 });
+  firebase.appCheck().activate(
+  new firebase.appCheck.ReCaptchaEnterpriseProvider('6LdBld4sAAAAANusJb2FSMuyo6DbRpkC7t-OaLcM'),
+  true
+);
 var auth = firebase.auth();
 var db = firebase.firestore();
 
