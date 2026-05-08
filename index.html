@@ -198,6 +198,32 @@ input[type="file"]{display:none}
 .cycle-del:active{color:var(--red)}
 
 .saving-overlay{position:fixed;inset:0;background:rgba(13,16,37,.8);display:flex;align-items:center;justify-content:center;z-index:300;flex-direction:column;gap:16px}
+
+/* CYCLE EDITOR */
+.editor-week{margin:12px 16px}
+.editor-week-title{font-size:14px;font-weight:700;padding:10px 0;color:var(--accent);display:flex;align-items:center;gap:8px;cursor:pointer}
+.editor-type{margin:6px 0;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--bg4);overflow:hidden}
+.editor-type-header{padding:10px 14px;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;background:var(--bg3)}
+.editor-ex{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--bg4)}
+.editor-ex-input{flex:1;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none}
+.editor-ex-input:focus{border-color:var(--accent)}
+.editor-ex-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 6px}
+.editor-ex-del:active{color:var(--red)}
+.editor-add{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-top:1px solid var(--bg4);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;background:none;border-bottom:none;border-left:none;border-right:none;width:100%}
+.editor-add:active{background:var(--bg3)}
+.editor-save{margin:12px 16px;width:calc(100% - 32px);padding:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.editor-save:active{transform:scale(.97)}
+
+/* DASHBOARD */
+.dash-user-card{background:var(--bg2);border-radius:var(--radius);padding:12px 16px;margin:6px 16px;border:1px solid var(--bg4);display:flex;align-items:center;gap:12px;cursor:pointer}
+.dash-user-card:active{background:var(--bg3)}
+.dash-user-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg4);object-fit:cover}
+.dash-user-info{flex:1}
+.dash-user-name{font-size:14px;font-weight:600}
+.dash-user-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.dash-user-count{font-size:12px;color:var(--accent);font-weight:700}
+.dash-filter{display:flex;gap:8px;padding:0 16px;margin:8px 0;flex-wrap:wrap}
+.dash-filter .chip{padding:6px 14px;font-size:12px}
 </style>
 </head>
 <body>
@@ -259,6 +285,12 @@ var DB = {
   loadUsers: function() {
     return db.collection("users").get().then(function(snap) {
       return snap.docs.map(function(d) { return Object.assign({uid:d.id}, d.data()); });
+    });
+  },
+  // ADMIN: load any user's logs
+  loadUserLogs: function(uid) {
+    return db.collection("users").doc(uid).collection("logs").orderBy("date","desc").limit(200).get().then(function(snap) {
+      return snap.docs.map(function(d) { return d.data(); });
     });
   }
 };
@@ -411,6 +443,16 @@ function App() {
   const [uploadFile, setUploadFile] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+
+  // Cycle editor state
+  const [editCycle, setEditCycle] = React.useState(null); // deep copy of cycle being edited
+  const [editOpenWeeks, setEditOpenWeeks] = React.useState({});
+
+  // Dashboard state
+  const [dashUser, setDashUser] = React.useState(null); // selected user for viewing
+  const [dashLogs, setDashLogs] = React.useState([]);
+  const [dashLoading, setDashLoading] = React.useState(false);
+  const [userLogCounts, setUserLogCounts] = React.useState({});
 
   // Auth listener
   React.useEffect(() => {
@@ -590,6 +632,96 @@ function App() {
       flash("הסייקל נמחק");
     } catch(err) { flash("שגיאה",true); }
   };
+
+  // ======== CYCLE EDITOR ========
+  const startEditCycle = (c) => {
+    setEditCycle(JSON.parse(JSON.stringify(c)));
+    setEditOpenWeeks({});
+  };
+  const editExName = (wi, type, ei, val) => {
+    setEditCycle(p => {
+      var n = JSON.parse(JSON.stringify(p));
+      n.weeks[wi].gym[type][ei] = val;
+      return n;
+    });
+  };
+  const deleteEx = (wi, type, ei) => {
+    setEditCycle(p => {
+      var n = JSON.parse(JSON.stringify(p));
+      n.weeks[wi].gym[type].splice(ei, 1);
+      return n;
+    });
+  };
+  const addEx = (wi, type) => {
+    setEditCycle(p => {
+      var n = JSON.parse(JSON.stringify(p));
+      n.weeks[wi].gym[type].push("");
+      return n;
+    });
+  };
+  const saveEditCycle = async () => {
+    if (!editCycle) return;
+    setSaving(true);
+    try {
+      await DB.saveCycle(editCycle);
+      setCycles(p => p.map(c => c.id === editCycle.id ? editCycle : c));
+      setEditCycle(null);
+      flash("הסייקל עודכן! ✅");
+    } catch(err) {
+      console.error(err);
+      flash("שגיאה בשמירה", true);
+    }
+    setSaving(false);
+  };
+
+  // ======== DASHBOARD ========
+  const viewUserLogs = async (u) => {
+    setDashUser(u);
+    setDashLoading(true);
+    try {
+      var uLogs = await DB.loadUserLogs(u.uid);
+      setDashLogs(uLogs);
+    } catch(err) {
+      console.error(err);
+      flash("שגיאה בטעינת נתונים", true);
+      setDashLogs([]);
+    }
+    setDashLoading(false);
+  };
+  const exportUserCsv = () => {
+    if (!dashLogs.length || !dashUser) return;
+    var rows = [["תאריך","שעה","סייקל","שבוע","סוג","מיקום","תרגיל","סט","משקל","חזרות","הערות"]];
+    dashLogs.forEach(function(log) {
+      if (log.type === "cardio") {
+        rows.push([log.date, log.time, log.cycleName, log.weekNum, "קרדיו "+(log.cardioMode||""), log.location==="gym"?"סטודיו":"בית", (log.cardioExercises||[]).join(" | "), "", log.workTime||"", log.restTime||"", log.cardioNotes||""]);
+      } else {
+        (log.exercises||[]).forEach(function(ex) {
+          (ex.sets||[]).forEach(function(s, si) {
+            rows.push([log.date, log.time, log.cycleName, log.weekNum, TN[log.type]||log.type, log.location==="gym"?"סטודיו":"בית", ex.name, si+1, s.weight||"", s.reps||"", s.notes||""]);
+          });
+        });
+      }
+    });
+    var csv = "\uFEFF" + rows.map(function(r){return r.join(",");}).join("\n");
+    var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (dashUser.displayName||"user")+"_logs.csv";
+    a.click();
+  };
+
+  // Load log counts for dashboard
+  React.useEffect(() => {
+    if (!admin || !allUsers.length) return;
+    var counts = {};
+    Promise.all(allUsers.map(function(u) {
+      return db.collection("users").doc(u.uid).collection("logs").get().then(function(snap) {
+        counts[u.uid] = snap.size;
+      }).catch(function() { counts[u.uid] = 0; });
+    })).then(function() {
+      setUserLogCounts(counts);
+    });
+  }, [allUsers]);
 
   // =================== RENDER ===================
 
@@ -810,7 +942,7 @@ function App() {
         </div>
 
         {/* Admin: Upload cycle */}
-        {admin && <div className="admin-section">
+        {admin && !editCycle && <div className="admin-section">
           <div className="admin-card">
             <h3>📤 העלאת סייקל חדש</h3>
             <p>העלי קובץ xlsx מתבנית הסייקל. הקובץ ייקרא אוטומטית ויתווסף למערכת.</p>
@@ -825,12 +957,13 @@ function App() {
 
           <div className="admin-card">
             <h3>📊 סייקלים קיימים</h3>
-            {cycles.length ? cycles.map(c=><div className="cycle-card" key={c.id} style={{margin:"8px 0"}}>
+            <p style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>לחצי על סייקל כדי לערוך תרגילים</p>
+            {cycles.length ? cycles.map(c=><div className="cycle-card" key={c.id} style={{margin:"8px 0",cursor:"pointer"}} onClick={()=>startEditCycle(c)}>
               <div>
-                <div className="cycle-name">{c.name}</div>
+                <div className="cycle-name">{c.name} ✏️</div>
                 <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"+(c.coachName?" · "+c.coachName:"")}</div>
               </div>
-              <button className="cycle-del" onClick={()=>deleteCycle(c.id)}>🗑</button>
+              <button className="cycle-del" onClick={(e)=>{e.stopPropagation();deleteCycle(c.id);}}>🗑</button>
             </div>) : <p>אין סייקלים</p>}
           </div>
 
@@ -847,12 +980,110 @@ function App() {
           </div>
         </div>}
 
+        {/* ===== CYCLE EDITOR ===== */}
+        {admin && editCycle && <div>
+          <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:10}}>
+            <button className="back-btn" onClick={()=>setEditCycle(null)}>→</button>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:800}}>✏️ עריכת {editCycle.name}</div>
+              <div style={{fontSize:11,color:"var(--text3)"}}>{(editCycle.weeks||[]).length} שבועות</div>
+            </div>
+          </div>
+
+          {(editCycle.weeks||[]).map((w,wi) => <div className="editor-week" key={wi}>
+            <div className="editor-week-title" onClick={()=>setEditOpenWeeks(p=>({...p,[wi]:!p[wi]}))}>
+              {editOpenWeeks[wi] ? "▾" : "◂"}
+              {w.peak && <span className="peak-badge">PEAK</span>}
+              {"שבוע "+w.weekNum}
+            </div>
+            {editOpenWeeks[wi] && ["workout1","workout2","cardio","flexibility"].map(type => {
+              var exArr = w.gym[type] || [];
+              if (!exArr.length && type !== "workout1" && type !== "workout2") return null;
+              return <div className="editor-type" key={type}>
+                <div className="editor-type-header">{TI[type]+" "+TN[type]+" ("+exArr.length+")"}</div>
+                {exArr.map((ex,ei) => <div className="editor-ex" key={ei}>
+                  <span style={{fontSize:11,color:"var(--text3)",minWidth:18}}>{ei+1}</span>
+                  <input className="editor-ex-input" value={ex} onChange={e=>editExName(wi,type,ei,e.target.value)} />
+                  <button className="editor-ex-del" onClick={()=>deleteEx(wi,type,ei)}>✕</button>
+                </div>)}
+                <button className="editor-add" onClick={()=>addEx(wi,type)}>+ הוסף תרגיל</button>
+              </div>;
+            })}
+          </div>)}
+
+          <button className="editor-save" onClick={saveEditCycle} disabled={saving}>
+            {saving ? "שומר..." : "💾 שמור שינויים"}
+          </button>
+          <button className="add-set-btn" style={{margin:"8px 16px",width:"calc(100% - 32px)"}} onClick={()=>setEditCycle(null)}>ביטול</button>
+        </div>}
+
         <div className="storage-info" style={{marginTop:16}}>
           <strong>{logs.length}</strong> אימונים שמורים<br/>
           הנתונים נשמרים ב-Firebase (ענן) ונגישים מכל מכשיר.
         </div>
 
         <button className="add-set-btn" style={{margin:"12px 16px",width:"calc(100% - 32px)"}} onClick={signOut}>🚪 התנתק/י</button>
+      </div>}
+
+      {/* ===== DASHBOARD (admin only) ===== */}
+      {tab==="dashboard" && admin && <div>
+        <div className="header">
+          {dashUser && <button className="back-btn" onClick={()=>{setDashUser(null);setDashLogs([]);}}>→</button>}
+          <img className="logo-img" src="rangeicon.jpg" alt="R" style={{width:34,height:34}} onError={(e)=>{e.target.style.display='none'}} />
+          <div className="logo-text" style={{fontSize:22}}>{dashUser ? dashUser.displayName : "דשבורד מאמן"}</div>
+        </div>
+
+        {!dashUser ? <div>
+          <div className="section-title">{"מתאמנים ("+allUsers.filter(u=>u.role!=="admin").length+")"}</div>
+          {allUsers.filter(u=>u.role!=="admin").map(u=><div className="dash-user-card" key={u.uid} onClick={()=>viewUserLogs(u)}>
+            <img className="dash-user-avatar" src={u.photoURL} onError={e=>{e.target.style.background="var(--bg4)"}} />
+            <div className="dash-user-info">
+              <div className="dash-user-name">{u.displayName||"—"}</div>
+              <div className="dash-user-meta">{u.email}</div>
+            </div>
+            <div className="dash-user-count">{(userLogCounts[u.uid]||0)+" אימונים"}</div>
+          </div>)}
+          {allUsers.filter(u=>u.role==="admin").length > 0 && <div>
+            <div className="section-title">אדמינים</div>
+            {allUsers.filter(u=>u.role==="admin").map(u=><div className="dash-user-card" key={u.uid} onClick={()=>viewUserLogs(u)}>
+              <img className="dash-user-avatar" src={u.photoURL} onError={e=>{e.target.style.background="var(--bg4)"}} />
+              <div className="dash-user-info">
+                <div className="dash-user-name">{u.displayName||"—"}</div>
+                <div className="dash-user-meta">{u.email}</div>
+              </div>
+              <div className="dash-user-count">{(userLogCounts[u.uid]||0)+" אימונים"}</div>
+            </div>)}
+          </div>}
+        </div> :
+
+        <div>
+          {dashLoading ? <div className="empty"><div className="spinner"></div><div style={{marginTop:12}}>טוען אימונים...</div></div> :
+          !dashLogs.length ? <div className="empty"><div className="empty-icon">📋</div><div>אין אימונים שמורים</div></div> :
+          <div>
+            <div style={{padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:13,color:"var(--text2)"}}>{dashLogs.length+" אימונים"}</div>
+              <button className="today-btn" onClick={exportUserCsv}>📥 ייצוא CSV</button>
+            </div>
+            {dashLogs.map(log=><div className="hist-card" key={log.id}>
+              <div className="hist-date">{log.date+" · "+log.time}</div>
+              <div className="hist-info">{TN[log.type]||log.type}{log.cardioMode?" · "+(log.cardioMode==="amrap"?"AMRAP":"TABATA"):""}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"בית")}</div>
+              {log.type==="cardio" ? <div className="hist-detail">
+                {log.workTime && <span>{"⏱ עבודה: "+log.workTime+" "}</span>}
+                {log.restTime && <span>{"😮‍💨 מנוחה: "+log.restTime}</span>}
+                {(log.cardioExercises||[]).map((ex,i)=><div key={i} style={{marginTop:i===0?4:0}}>{(i+1)+". "+ex}</div>)}
+                {log.cardioNotes && <div className="hist-note" style={{marginTop:4}}>{"💬 "+log.cardioNotes}</div>}
+              </div> :
+              <div className="hist-detail">{(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+                <strong>{(ex.name||"").substring(0,50)}</strong><br/>
+                {(ex.sets||[]).map((s,si)=><span key={si}>
+                  {(s.weight?s.weight+"kg":"")+" "+(s.reps?"×"+s.reps:"")}
+                  {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+                  {si<ex.sets.length-1?" | ":""}
+                </span>)}
+              </div>)}</div>}
+            </div>)}
+          </div>}
+        </div>}
       </div>}
 
       {/* ===== NAV ===== */}
@@ -863,6 +1094,9 @@ function App() {
         <button className={"nav-btn"+(tab==="history"?" active":"")} onClick={()=>setTab("history")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>היסטוריה
         </button>
+        {admin && <button className={"nav-btn"+(tab==="dashboard"?" active":"")} onClick={()=>{setTab("dashboard");setDashUser(null);}}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>דשבורד
+        </button>}
         <button className={"nav-btn"+(tab==="settings"?" active":"")} onClick={()=>setTab("settings")}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>{admin?"ניהול":"הגדרות"}
         </button>
