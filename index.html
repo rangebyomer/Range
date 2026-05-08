@@ -697,11 +697,11 @@ function App() {
     var rows = [["תאריך","שעה","סייקל","שבוע","סוג","מיקום","תרגיל","סט","משקל","חזרות","הערות"]];
     dashLogs.forEach(function(log) {
       if (log.type === "cardio") {
-        rows.push([log.date, log.time, log.cycleName, log.weekNum, "קרדיו "+(log.cardioMode||""), log.location==="gym"?"סטודיו":"בית", (log.cardioExercises||[]).join(" | "), "", log.workTime||"", log.restTime||"", log.cardioNotes||""]);
+        rows.push([log.date, log.time, log.cycleName, log.weekNum, "קרדיו "+(log.cardioMode||""), log.location==="gym"?"קיר":"חדר כושר", (log.cardioExercises||[]).join(" | "), "", log.workTime||"", log.restTime||"", log.cardioNotes||""]);
       } else {
         (log.exercises||[]).forEach(function(ex) {
           (ex.sets||[]).forEach(function(s, si) {
-            rows.push([log.date, log.time, log.cycleName, log.weekNum, TN[log.type]||log.type, log.location==="gym"?"סטודיו":"בית", ex.name, si+1, s.weight||"", s.reps||"", s.notes||""]);
+            rows.push([log.date, log.time, log.cycleName, log.weekNum, TN[log.type]||log.type, log.location==="gym"?"קיר":"חדר כושר", ex.name, si+1, s.weight||"", s.reps||"", s.notes||""]);
           });
         });
       }
