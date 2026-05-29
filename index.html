@@ -905,11 +905,11 @@ function App() {
                     <div style={{width:30}}></div>
                   </div>
                   {(curSets[idx]||[]).map((s,si)=><div key={si}>
-                    <div className="set-row" style={{gap:4}}>
+                    <div className="set-row">
                       <div className="set-label">{si+1}</div>
-                      <input className="set-input" style={{flex:1.2}} type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
-                      <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
-                      <input className="set-input" style={{flex:0.8}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
+                       <input className="set-input" type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                        <input className="set-input" type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                        <input className="set-input" style={{flex:"0.7",minWidth:48}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
                       <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
                     </div>
                     <div className="set-notes-row">
