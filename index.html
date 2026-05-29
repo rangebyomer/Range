@@ -160,6 +160,10 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 /* PEAK */
 .peak-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:50px;margin-right:8px;letter-spacing:1px}
 
+/* RIR INPUT — compact */
+.rir-badge{display:inline-block;background:rgba(139,156,247,.15);color:var(--accent);font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;margin-right:6px}
+.ex-meta{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+
 /* ADMIN */
 .admin-section{padding:16px}
 .admin-card{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--bg4)}
@@ -307,7 +311,12 @@ var DB = {
 
 <script>
 // =====================================================
-// XLSX PARSER — reads wave template into cycle data
+// XLSX PARSER v2 — NEW FORMAT (Cycle #5+)
+// Sheet names: "1","2","3","4","5" = weeks 1-5
+// Each sheet has 3 workouts (אימון 1/2/3)
+// Columns: D=code, E=name, F=reps, G=sets, H=RIR, I=variant
+// Cardio/AMRAP = TABATA🚀 or AMRAP🚀 section at end of each workout
+// Sheet 5 = PEAK week
 // =====================================================
 function parseWaveXlsx(file) {
   return new Promise(function(resolve, reject) {
@@ -315,96 +324,136 @@ function parseWaveXlsx(file) {
     reader.onload = function(e) {
       try {
         var wb = XLSX.read(e.target.result, {type:"array"});
-        
-        // Read metadata
-        var metaSheet = wb.Sheets[wb.SheetNames.find(function(n){return n.indexOf("מטא")>=0;}) || wb.SheetNames[1]];
-        var meta = {};
-        if (metaSheet) {
-          // Read C column values (row 3 onward)
-          var keys = ["cycle_number","cycle_name","start_date","num_weeks","coach_name","notes"];
-          for (var i = 0; i < keys.length; i++) {
-            var cell = metaSheet["C"+(i+3)];
-            meta[keys[i]] = cell ? String(cell.v||"") : "";
-          }
-        }
-        
-        // Read week sheets
+
+        // Extract cycle name/number from cell B2 of sheet 1
+        var firstSheet = wb.Sheets[wb.SheetNames[0]];
+        var titleCell = firstSheet ? (firstSheet["B2"] || firstSheet["C2"] || firstSheet["B1"]) : null;
+        var cycleTitle = titleCell ? String(titleCell.v || "").trim() : "";
+        var cycleNumMatch = cycleTitle.match(/#(\d+)/);
+        var cycleNum = cycleNumMatch ? parseInt(cycleNumMatch[1]) : Date.now();
+        var cycleName = cycleTitle || "Cycle " + cycleNum;
+
+        // All sheets are week sheets (named "1","2","3","4","5" etc)
         var weeks = [];
         wb.SheetNames.forEach(function(name) {
-          var weekMatch = name.match(/שבוע\s*(\d+)/);
-          if (!weekMatch) return;
-          var weekNum = parseInt(weekMatch[1]);
+          var weekNum = parseInt(name);
+          if (isNaN(weekNum)) return;
           var ws = wb.Sheets[name];
-          
-          // Check peak flag
-          var peakCell = ws["B2"];
-          var isPeak = peakCell && String(peakCell.v||"").toUpperCase() === "TRUE";
-          
-          // Parse exercises from columns
-          // A = workout1 exercises, C = workout2 exercises, E = cardio, G = flexibility
-          var workout1 = [], workout2 = [], cardio = [], flexibility = [];
-          
-          for (var r = 5; r <= 20; r++) {
-            var a = ws["A"+r]; 
-            var c = ws["C"+r]; 
-            var e = ws["E"+r]; 
-            var g = ws["G"+r];
-            
-            if (a && a.v && !String(a.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(a.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
-              workout1.push(String(a.v).trim());
+          var range = XLSX.utils.decode_range(ws['!ref'] || "A1:M50");
+          var maxRow = range.e.r + 1;
+
+          // Collect all rows as arrays
+          var rows = [];
+          for (var r = 1; r <= maxRow; r++) {
+            var row = [];
+            for (var c = 0; c <= 12; c++) {
+              var cell = ws[XLSX.utils.encode_cell({r:r-1, c:c})];
+              row.push(cell ? cell.v : null);
             }
-            if (c && c.v && !String(c.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(c.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
-              workout2.push(String(c.v).trim());
-            }
-            if (e && e.v && !String(e.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(e.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
-              cardio.push(String(e.v).trim());
-            }
-            if (g && g.v && !String(g.v).match(/^[🌺🌼🧘💎←✓✔️]/) && !String(g.v).match(/חימום|סופרסט|AMRAP|TABATA|סידור/)) {
-              flexibility.push(String(g.v).trim());
-            }
+            rows.push(row);
           }
-          
-          // Filter out placeholder text
-          var filterPlaceholder = function(arr) {
-            return arr.filter(function(s) { return s && s.indexOf("כתבו כאן") < 0 && s.indexOf("תרגיל ") < 0 && s.length > 2; });
-          };
-          
+
+          // Peak = last sheet OR if title cell contains "פיק"
+          var isPeak = (weekNum === wb.SheetNames.filter(function(n){return !isNaN(parseInt(n));}).length);
+
+          // Parse workouts from the sheet
+          // Structure: row with "אימון X" in col C starts a new workout block
+          // Then header row, then exercises (col D=code, col E=name, col F=reps, col G=sets, col H=RIR, col I=variant)
+          // TABATA🚀 or AMRAP🚀 in col D signals cardio section
+          var trainings = {}; // {1: {exercises:[], cardio:[], cardioType:""}, 2:..., 3:...}
+          var curTraining = null;
+          var inCardio = false;
+
+          rows.forEach(function(row) {
+            var colC = row[2] ? String(row[2]).trim() : "";
+            var colD = row[3] ? String(row[3]).trim() : "";
+            var colE = row[4] ? String(row[4]).trim() : "";
+
+            // Detect workout header "אימון X"
+            var wMatch = colC.match(/אימון\s*(\d+)/);
+            if (wMatch) {
+              curTraining = parseInt(wMatch[1]);
+              inCardio = false;
+              if (!trainings[curTraining]) trainings[curTraining] = {exercises:[], cardio:[], cardioType:"tabata"};
+              return;
+            }
+
+            if (!curTraining) return;
+
+            // Detect cardio/AMRAP section
+            if (colD.match(/TABATA|AMRAP/i) && colD.match(/🚀/)) {
+              inCardio = true;
+              trainings[curTraining].cardioType = colD.match(/AMRAP/i) ? "amrap" : "tabata";
+              return;
+            }
+
+            if (inCardio) {
+              // Cardio exercise rows — text in col D, no code pattern
+              if (colD && !colD.match(/^[A-C]\d$/) && colD.length > 2 && !colD.match(/תרגיל|חזרות|הוראות/)) {
+                trainings[curTraining].cardio.push(colD);
+              }
+              return;
+            }
+
+            // Skip header rows
+            if (colD === "תרגיל" || colE === "תרגיל" || colC.match(/הוראות|מס'/)) return;
+
+            // Exercise row: col D has code like A1/A2/B1/B2/C1/C2/C3/C4
+            var codeMatch = colD.match(/^([A-C])(\d+)$/);
+            if (codeMatch && colE) {
+              var reps = row[5] ? String(row[5]).trim() : "";
+              var sets = row[6];
+              var rir = row[7];
+              var variant = row[8] ? String(row[8]).trim() : "";
+              // Convert numeric dates that are actually "-" or similar
+              if (typeof sets === 'number' && sets > 40000) sets = null; // Excel date artifact
+              if (typeof rir === 'number' && rir > 40000) rir = null;
+              trainings[curTraining].exercises.push({
+                code: colD,
+                group: codeMatch[1].toLowerCase(),
+                name: colE.replace(/\n/g," ").trim(),
+                reps: reps,
+                sets: sets ? String(sets) : "",
+                rir: (rir !== null && rir !== undefined && rir < 40000) ? String(rir) : "",
+                variant: variant
+              });
+            } else if (!codeMatch && colD && colE && row[5]) {
+              // Continuation row for A1/B1 (e.g. second set spec like "70% 5RM")
+              // Attach to last exercise
+              var last = trainings[curTraining].exercises[trainings[curTraining].exercises.length - 1];
+              if (last) {
+                var reps2 = row[5] ? String(row[5]).trim() : "";
+                var sets2 = row[6];
+                var rir2 = row[7];
+                var variant2 = row[8] ? String(row[8]).trim() : "";
+                if (typeof sets2 === 'number' && sets2 > 40000) sets2 = null;
+                if (typeof rir2 === 'number' && rir2 > 40000) rir2 = null;
+                if (!last.extraSets) last.extraSets = [];
+                last.extraSets.push({
+                  reps: reps2,
+                  sets: sets2 ? String(sets2) : "",
+                  rir: (rir2 !== null && rir2 !== undefined && rir2 < 40000) ? String(rir2) : "",
+                  variant: variant2
+                });
+              }
+            }
+          });
+
           weeks.push({
             weekNum: weekNum,
             peak: isPeak,
-            gym: {
-              workout1: filterPlaceholder(workout1),
-              workout2: filterPlaceholder(workout2),
-              cardio: filterPlaceholder(cardio),
-              flexibility: filterPlaceholder(flexibility)
-            }
+            trainings: trainings // {1:{exercises,cardio,cardioType}, 2:..., 3:...}
           });
         });
-        
-        // Read home workouts if sheet exists
-        var homeSheet = wb.Sheets[wb.SheetNames.find(function(n){return n.indexOf("בית")>=0;})];
-        var homeExercises = {workout1:[], workout2:[], cardio:[]};
-        if (homeSheet) {
-          for (var r = 3; r <= 15; r++) {
-            var a = homeSheet["A"+r], b = homeSheet["B"+r], c = homeSheet["C"+r];
-            if (a && a.v && String(a.v).indexOf("←") < 0) homeExercises.workout1.push(String(a.v).trim());
-            if (b && b.v && String(b.v).indexOf("←") < 0) homeExercises.workout2.push(String(b.v).trim());
-            if (c && c.v && String(c.v).indexOf("←") < 0) homeExercises.cardio.push(String(c.v).trim());
-          }
-        }
-        
+
         weeks.sort(function(a,b){return a.weekNum-b.weekNum;});
-        
-        var cycleId = "cycle_" + (meta.cycle_number || Date.now());
+
+        var cycleId = "cycle_" + cycleNum;
         resolve({
           id: cycleId,
-          number: parseInt(meta.cycle_number) || 0,
-          name: meta.cycle_name || ("Cycle " + (meta.cycle_number||"?")),
-          startDate: meta.start_date || "",
-          coachName: meta.coach_name || "",
-          notes: meta.notes || "",
+          number: cycleNum,
+          name: cycleName,
           weeks: weeks,
-          homeExercises: homeExercises,
           createdAt: new Date().toISOString()
         });
       } catch(err) {
@@ -509,55 +558,56 @@ function App() {
   const cycle = cycles.find(c => c.id === selCycleId);
   const week = cycle ? (cycle.weeks||[]).find(w => w.weekNum === selWeek) : null;
 
-  // Type mapping — the xlsx uses workout1/workout2, display as before
-  var TN = {workout1:"סקוואט",workout2:"דדליפט",cardio:"קרדיו",flexibility:"גמישות"};
-  var TI = {workout1:"🏋️",workout2:"💪",cardio:"🔥",flexibility:"🧘"};
+  // Type mapping — training1/2/3 = strength workouts
+  var TN = {training1:"אימון 1",training2:"אימון 2",training3:"אימון 3"};
+  var TI = {training1:"🏋️",training2:"💪",training3:"🔥"};
 
-  const getExercises = () => {
-    if (!week || !selType) return [];
-    if (loc === "home" && cycle.homeExercises) {
-      var homeKey = selType === "flexibility" ? null : selType;
-      if (homeKey && cycle.homeExercises[homeKey] && cycle.homeExercises[homeKey].length > 0) {
-        return cycle.homeExercises[homeKey];
-      }
-    }
-    return week.gym[selType] || [];
+  // Get current training data (exercises + cardio)
+  const getTrainingData = () => {
+    if (!week || !selType) return {exercises:[], cardio:[], cardioType:"tabata"};
+    var t = (week.trainings||{})[parseInt(selType.replace("training",""))];
+    return t || {exercises:[], cardio:[], cardioType:"tabata"};
   };
-  const exercises = getExercises();
+  const trainingData = getTrainingData();
+  const exercises = trainingData.exercises || [];
+  const cardioExercises = trainingData.cardio || [];
+  const weekCardioType = trainingData.cardioType || "tabata";
 
-  const cardioAmrap = selType==="cardio" ? exercises.slice(0,4) : [];
-  const cardioTabata = selType==="cardio" ? exercises.slice(4) : [];
-  const cardioExercises = cardioMode==="amrap" ? cardioAmrap : cardioTabata;
+  const hasData = selType
+    ? Object.values(curSets).some(sets => sets && sets.some(s => s.weight || s.reps || s.variant))
+      || (cardioData.workTime || cardioData.restTime || cardioData.notes)
+    : false;
 
-  const hasData = selType==="cardio"
-    ? (cardioData.workTime || cardioData.restTime || cardioData.notes)
-    : Object.values(curSets).some(sets => sets && sets.some(s => s.weight || s.reps));
-
-  // Superset grouping
-  function getGroup(type, idx) {
-    if (type === "cardio" || type === "flexibility") return null;
-    if (idx <= 1) return "a";
-    if (idx <= 3) return "b";
-    return "c";
+  // Superset grouping — based on exercise code (A/B/C group)
+  function getGroup(ex) {
+    if (!ex || !ex.group) return null;
+    return ex.group; // "a", "b", or "c"
   }
-  function isGroupStart(type, idx) {
-    if (type === "cardio" || type === "flexibility") return false;
-    return idx === 0 || idx === 2 || idx === 4;
+  function isGroupStart(exList, idx) {
+    if (idx === 0) return true;
+    return exList[idx] && exList[idx-1] && exList[idx].group !== exList[idx-1].group;
   }
 
   const goBack = () => {
     if (selType) { setSelType(null); setCurSets({}); setOpenEx({}); setCardioMode("amrap"); setCardioData({workTime:"",restTime:"",notes:""}); }
     else if (selWeek) setSelWeek(null);
   };
-  const toggleEx = (idx) => {
+  const toggleEx = (idx, ex) => {
     setOpenEx(p => ({...p, [idx]: !p[idx]}));
-    if (!curSets[idx]) setCurSets(p => ({...p, [idx]: [{weight:"",reps:"",notes:""}]}));
+    if (!curSets[idx]) {
+      // Pre-fill sets based on the exercise spec (sets count from xlsx)
+      var numSets = ex && ex.sets ? parseInt(ex.sets) || 3 : 3;
+      var preset = ex && ex.variant ? ex.variant : "";
+      var initSets = [];
+      for (var s=0; s<numSets; s++) initSets.push({weight:"",reps:"",rir:"",variant:preset,notes:""});
+      setCurSets(p => ({...p, [idx]: initSets}));
+    }
   };
   const updateSet = (ei, si, f, v) => {
     setCurSets(p => {var n={...p}; n[ei]=[...n[ei]]; n[ei][si]={...n[ei][si],[f]:v}; return n;});
   };
   const addSet = (ei) => {
-    setCurSets(p => {var n={...p}; var a=n[ei]||[]; var l=a[a.length-1]||{weight:"",reps:"",notes:""}; n[ei]=[...a,{weight:l.weight,reps:l.reps,notes:""}]; return n;});
+    setCurSets(p => {var n={...p}; var a=n[ei]||[]; var l=a[a.length-1]||{weight:"",reps:"",rir:"",variant:"",notes:""}; n[ei]=[...a,{weight:l.weight,reps:"",rir:"",variant:l.variant,notes:""}]; return n;});
   };
   const removeSet = (ei, si) => {
     setCurSets(p => {var n={...p}; n[ei]=n[ei].filter((_,i)=>i!==si); if(!n[ei].length) delete n[ei]; return n;});
@@ -567,33 +617,40 @@ function App() {
     if (saving) return;
     setSaving(true);
     try {
-      var log;
-      if (selType === "cardio") {
-        if (!cardioData.workTime && !cardioData.restTime && !cardioData.notes) { flash("אין נתונים",true); setSaving(false); return; }
-        log = {
-          id: "l"+Date.now(),
-          date: workoutDate,
-          time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
-          cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
-          type: "cardio", location: loc, cardioMode: cardioMode,
-          cardioExercises: cardioExercises,
-          workTime: cardioData.workTime, restTime: cardioData.restTime, cardioNotes: cardioData.notes
-        };
-      } else {
-        var exLogs = [];
-        Object.entries(curSets).forEach(([ei,sets]) => {
-          var filled = sets.filter(s => s.reps||s.weight||s.notes);
-          if (filled.length) exLogs.push({name:exercises[parseInt(ei)], sets:filled.map(s=>({weight:s.weight?parseFloat(s.weight):null,reps:s.reps?parseInt(s.reps):null,notes:s.notes||null}))});
-        });
-        if (!exLogs.length) { flash("אין נתונים",true); setSaving(false); return; }
-        log = {
-          id: "l"+Date.now(),
-          date: workoutDate,
-          time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
-          cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
-          type: selType, location: loc, exercises: exLogs
-        };
+      var exLogs = [];
+      Object.entries(curSets).forEach(([ei,sets]) => {
+        var filled = sets.filter(s => s.reps||s.weight||s.variant||s.notes);
+        if (filled.length) {
+          var ex = exercises[parseInt(ei)];
+          exLogs.push({
+            code: ex ? ex.code : "",
+            name: ex ? ex.name : "",
+            targetReps: ex ? ex.reps : "",
+            sets: filled.map(s=>({
+              weight: s.weight ? parseFloat(s.weight) : null,
+              reps: s.reps ? parseInt(s.reps) : null,
+              rir: s.rir || null,
+              variant: s.variant || null,
+              notes: s.notes || null
+            }))
+          });
+        }
+      });
+      // Also save cardio notes if entered
+      var cardioLog = null;
+      if (cardioData.workTime || cardioData.restTime || cardioData.notes) {
+        cardioLog = {workTime: cardioData.workTime, restTime: cardioData.restTime, notes: cardioData.notes, exercises: cardioExercises, type: weekCardioType};
       }
+      if (!exLogs.length && !cardioLog) { flash("אין נתונים",true); setSaving(false); return; }
+      var log = {
+        id: "l"+Date.now(),
+        date: workoutDate,
+        time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
+        cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
+        type: selType, location: loc,
+        exercises: exLogs,
+        cardio: cardioLog
+      };
       await DB.saveLog(user.uid, log);
       setLogs(p => [log, ...p]);
       flash("האימון נשמר! 💪");
@@ -647,27 +704,6 @@ function App() {
     setEditCycle(JSON.parse(JSON.stringify(c)));
     setEditOpenWeeks({});
   };
-  const editExName = (wi, type, ei, val) => {
-    setEditCycle(p => {
-      var n = JSON.parse(JSON.stringify(p));
-      n.weeks[wi].gym[type][ei] = val;
-      return n;
-    });
-  };
-  const deleteEx = (wi, type, ei) => {
-    setEditCycle(p => {
-      var n = JSON.parse(JSON.stringify(p));
-      n.weeks[wi].gym[type].splice(ei, 1);
-      return n;
-    });
-  };
-  const addEx = (wi, type) => {
-    setEditCycle(p => {
-      var n = JSON.parse(JSON.stringify(p));
-      n.weeks[wi].gym[type].push("");
-      return n;
-    });
-  };
   const saveEditCycle = async () => {
     if (!editCycle) return;
     setSaving(true);
@@ -699,16 +735,15 @@ function App() {
   };
   const exportUserCsv = () => {
     if (!dashLogs.length || !dashUser) return;
-    var rows = [["תאריך","שעה","סייקל","שבוע","סוג","מיקום","תרגיל","סט","משקל","חזרות","הערות"]];
+    var rows = [["תאריך","שעה","סייקל","שבוע","אימון","מיקום","קוד","תרגיל","יעד חזרות","סט","משקל","חזרות","RIR","וריאציה","הערות"]];
     dashLogs.forEach(function(log) {
-      if (log.type === "cardio") {
-        rows.push([log.date, log.time, log.cycleName, log.weekNum, "קרדיו "+(log.cardioMode||""), log.location==="gym"?"קיר":"חדר כושר", (log.cardioExercises||[]).join(" | "), "", log.workTime||"", log.restTime||"", log.cardioNotes||""]);
-      } else {
-        (log.exercises||[]).forEach(function(ex) {
-          (ex.sets||[]).forEach(function(s, si) {
-            rows.push([log.date, log.time, log.cycleName, log.weekNum, TN[log.type]||log.type, log.location==="gym"?"קיר":"חדר כושר", ex.name, si+1, s.weight||"", s.reps||"", s.notes||""]);
-          });
+      (log.exercises||[]).forEach(function(ex) {
+        (ex.sets||[]).forEach(function(s, si) {
+          rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", log.location==="gym"?"סטודיו":"קיר", ex.code||"", ex.name||"", ex.targetReps||"", si+1, s.weight||"", s.reps||"", s.rir||"", s.variant||"", s.notes||""]);
         });
+      });
+      if (log.cardio) {
+        rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", log.location==="gym"?"סטודיו":"קיר", (log.cardio.type||"").toUpperCase(), (log.cardio.exercises||[]).join("|"), "", "", "", "", "", "", log.cardio.workTime+"/"+log.cardio.restTime+(log.cardio.notes?" "+log.cardio.notes:"")]);
       }
     });
     var csv = "\uFEFF" + rows.map(function(r){return r.join(",");}).join("\n");
@@ -790,13 +825,16 @@ function App() {
           {selWeek && week && <div>
             <div className="section-title">בחרו אימון</div>
             <div className="wt-grid">
-              {["workout1","workout2","cardio","flexibility"].map(t=>{
-                var exCount = (week.gym[t]||[]).length;
+              {["training1","training2","training3"].map(t=>{
+                var tNum = parseInt(t.replace("training",""));
+                var td = (week.trainings||{})[tNum];
+                var exCount = td ? (td.exercises||[]).length : 0;
                 if (!exCount) return null;
-                return <div key={t} className={"wt-card"+(selType===t?" active":"")} onClick={()=>{setSelType(t);setCurSets({});setOpenEx({});setLoc("gym");setCardioMode("amrap");setCardioData({workTime:"",restTime:"",notes:""});setWorkoutDate(new Date().toISOString().split("T")[0]);}}>
+                var cardioCount = td ? (td.cardio||[]).length : 0;
+                return <div key={t} className={"wt-card"+(selType===t?" active":"")} onClick={()=>{setSelType(t);setCurSets({});setOpenEx({});setLoc("gym");setCardioData({workTime:"",restTime:"",notes:""});setWorkoutDate(new Date().toISOString().split("T")[0]);}}>
                   <div className="wt-icon">{TI[t]}</div>
                   <div className="wt-name">{TN[t]}</div>
-                  <div className="wt-count">{exCount+" תרגילים"}</div>
+                  <div className="wt-count">{exCount+" תרגילים"+(cardioCount?" + "+td.cardioType.toUpperCase():"")}</div>
                 </div>;
               })}
             </div>
@@ -825,71 +863,57 @@ function App() {
         {/* Location toggle */}
         <div className="loc-toggle">
           <button className={"loc-btn"+(loc==="home"?" active":"")} onClick={()=>setLoc("home")}>🧱 קיר</button>
-          <button className={"loc-btn"+(loc==="gym"?" active":"")} onClick={()=>setLoc("gym")}>🏋️ חדר כושר</button>
+          <button className={"loc-btn"+(loc==="gym"?" active":"")} onClick={()=>setLoc("gym")}>🏋️ סטודיו</button>
         </div>
 
-        {/* CARDIO MODE */}
-        {selType==="cardio" && <div>
-          <div className="cardio-toggle">
-            <button className={"cardio-toggle-btn"+(cardioMode==="amrap"?" active":"")} onClick={()=>{setCardioMode("amrap");setCardioData({workTime:"",restTime:"",notes:""});}}>AMRAP</button>
-            <button className={"cardio-toggle-btn"+(cardioMode==="tabata"?" active":"")} onClick={()=>{setCardioMode("tabata");setCardioData({workTime:"",restTime:"",notes:""});}}>TABATA</button>
-          </div>
-          <div className="cardio-time-row">
-            <div className="cardio-time-box">
-              <div className="cardio-time-label">⏱ זמן עבודה</div>
-              <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.workTime} onChange={e=>setCardioData(p=>({...p,workTime:e.target.value}))} />
-            </div>
-            <div className="cardio-time-box">
-              <div className="cardio-time-label">😮‍💨 זמן מנוחה</div>
-              <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.restTime} onChange={e=>setCardioData(p=>({...p,restTime:e.target.value}))} />
-            </div>
-          </div>
-          <div className="cardio-ex-list">
-            {cardioExercises.map((ex,i)=>
-              <div className="cardio-ex-item" key={i}>
-                <div className="ex-num">{i+1}</div>
-                <div className="ex-name">{ex}</div>
-              </div>
-            )}
-          </div>
-          <div className="cardio-notes-wrap">
-            <textarea className="cardio-notes-input" placeholder="הערות..." value={cardioData.notes} onChange={e=>setCardioData(p=>({...p,notes:e.target.value}))} />
-          </div>
-        </div>}
-
-        {/* STRENGTH / FLEXIBILITY */}
-        {selType!=="cardio" && <div style={{marginTop:12}}>
+        {/* EXERCISES */}
+        <div style={{marginTop:12}}>
           {exercises.map((ex,idx) => {
-            var grp = getGroup(selType, idx);
-            var showLabel = isGroupStart(selType, idx);
+            var grp = getGroup(ex);
+            var showLabel = isGroupStart(exercises, idx);
             return <div key={idx}>
-              {showLabel && <div className="group-label">
-                <div className={"group-badge "+grp}>{({a:"A",b:"B",c:"C"})[grp]}</div>
+              {showLabel && grp && <div className="group-label">
+                <div className={"group-badge "+grp}>{grp.toUpperCase()}</div>
                 <div className="group-text">{({a:"סופרסט A",b:"סופרסט B",c:"סופרסט C"})[grp]}</div>
                 <div className="group-line"></div>
               </div>}
               <div className={"ex-card"+(grp?" g"+grp:"")}>
-                <div className="ex-header" onClick={()=>toggleEx(idx)}>
-                  <div className="ex-num">{idx+1}</div>
-                  <div className="ex-name">{ex}</div>
+                <div className="ex-header" onClick={()=>toggleEx(idx, ex)}>
+                  <div className="ex-num">{ex.code||idx+1}</div>
+                  <div style={{flex:1}}>
+                    <div className="ex-name">{ex.name}</div>
+                    <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>
+                      {ex.reps && <span>{ex.reps} חז' </span>}
+                      {ex.sets && <span>· {ex.sets} סטים </span>}
+                      {ex.rir && <span>· RIR {ex.rir}</span>}
+                      {ex.variant && <span style={{color:"var(--accent)"}}> · {ex.variant}</span>}
+                    </div>
+                    {ex.extraSets && ex.extraSets.map((es,esi)=>(
+                      <div key={esi} style={{fontSize:10,color:"var(--text3)"}}>
+                        {"+ "+es.reps+" | "+es.sets+" סטים | RIR "+es.rir+(es.variant?" | "+es.variant:"")}
+                      </div>
+                    ))}
+                  </div>
                   <span className="ex-chevron">{openEx[idx]?"▴":"▾"}</span>
                 </div>
                 {openEx[idx] && <div className="sets-area">
-                  <div className="sets-header">
+                  <div className="sets-header" style={{gap:4}}>
                     <div className="set-label"></div>
-                    <div style={{flex:1}} className="sets-header-label">משקל (ק"ג)</div>
+                    <div style={{flex:1.2}} className="sets-header-label">משקל</div>
                     <div style={{flex:1}} className="sets-header-label">חזרות</div>
+                    <div style={{flex:0.8}} className="sets-header-label">RIR</div>
                     <div style={{width:30}}></div>
                   </div>
                   {(curSets[idx]||[]).map((s,si)=><div key={si}>
-                    <div className="set-row">
+                    <div className="set-row" style={{gap:4}}>
                       <div className="set-label">{si+1}</div>
-                      <input className="set-input" type="number" inputMode="decimal" placeholder="—" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
-                      <input className="set-input" type="number" inputMode="numeric" placeholder="—" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                      <input className="set-input" style={{flex:1.2}} type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                      <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                      <input className="set-input" style={{flex:0.8}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
                       <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
                     </div>
                     <div className="set-notes-row">
-                      <input className="set-notes" type="text" placeholder="הערות..." value={s.notes} onChange={e=>updateSet(idx,si,"notes",e.target.value)} />
+                      <input className="set-notes" type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
                     </div>
                   </div>)}
                   <button className="add-set-btn" onClick={()=>addSet(idx)}>+ הוסף סט</button>
@@ -897,7 +921,38 @@ function App() {
               </div>
             </div>;
           })}
-        </div>}
+
+          {/* CARDIO/TABATA section at bottom of workout */}
+          {cardioExercises.length > 0 && <div style={{marginTop:12}}>
+            <div className="group-label">
+              <div className="group-badge" style={{background:"var(--orange)",fontSize:10,width:40,borderRadius:8}}>
+                {weekCardioType==="amrap"?"AMRAP":"TABATA"}
+              </div>
+              <div className="group-line"></div>
+            </div>
+            <div className="cardio-ex-list">
+              {cardioExercises.map((ex,i)=>
+                <div className="cardio-ex-item" key={i}>
+                  <div className="ex-num">{i+1}</div>
+                  <div className="ex-name">{ex}</div>
+                </div>
+              )}
+            </div>
+            <div style={{padding:"0 16px",marginTop:8,display:"flex",gap:8}}>
+              <div className="cardio-time-box" style={{flex:1}}>
+                <div className="cardio-time-label">⏱ זמן עבודה</div>
+                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.workTime} onChange={e=>setCardioData(p=>({...p,workTime:e.target.value}))} />
+              </div>
+              <div className="cardio-time-box" style={{flex:1}}>
+                <div className="cardio-time-label">😮‍💨 זמן מנוחה</div>
+                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.restTime} onChange={e=>setCardioData(p=>({...p,restTime:e.target.value}))} />
+              </div>
+            </div>
+            <div className="cardio-notes-wrap" style={{marginTop:8}}>
+              <textarea className="cardio-notes-input" placeholder="הערות קרדיו..." value={cardioData.notes} onChange={e=>setCardioData(p=>({...p,notes:e.target.value}))} />
+            </div>
+          </div>}
+        </div>
 
         {hasData && <div className="save-bar"><div className="save-bar-inner">
           <button className="save-btn" onClick={saveWorkout} disabled={saving}>שמור אימון</button>
@@ -914,21 +969,25 @@ function App() {
         logs.map(log=><div className="hist-card" key={log.id}>
           <button className="hist-del" onClick={()=>deleteLog(log.id)}>🗑</button>
           <div className="hist-date">{log.date+" · "+log.time}</div>
-          <div className="hist-info">{TN[log.type]||log.type}{log.cardioMode?" · "+(log.cardioMode==="amrap"?"AMRAP":"TABATA"):""}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"בית")}</div>
-          {log.type==="cardio" ? <div className="hist-detail">
-            {log.workTime && <span>{"⏱ עבודה: "+log.workTime+" "}</span>}
-            {log.restTime && <span>{"😮‍💨 מנוחה: "+log.restTime}</span>}
-            {(log.cardioExercises||[]).map((ex,i)=><div key={i} style={{marginTop:i===0?4:0}}>{(i+1)+". "+ex}</div>)}
-            {log.cardioNotes && <div className="hist-note" style={{marginTop:4}}>{"💬 "+log.cardioNotes}</div>}
-          </div> :
-          <div className="hist-detail">{(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
-            <strong>{(ex.name||"").substring(0,50)}</strong><br/>
-            {(ex.sets||[]).map((s,si)=><span key={si}>
-              {(s.weight?s.weight+"kg":"")+" "+(s.reps?"×"+s.reps:"")}
-              {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
-              {si<ex.sets.length-1?" | ":""}
-            </span>)}
-          </div>)}</div>}
+          <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"קיר")}</div>
+          <div className="hist-detail">
+            {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+              <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
+              {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
+              {(ex.sets||[]).map((s,si)=><span key={si}>
+                {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
+                {s.variant && <span className="hist-note">{" "+s.variant}</span>}
+                {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+                {si<ex.sets.length-1?" | ":""}
+              </span>)}
+            </div>)}
+            {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
+              <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"tabata").toUpperCase()+" "}</span>
+              {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
+              {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
+              {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
+            </div>}
+          </div>
         </div>)}
       </div>}
 
@@ -1005,17 +1064,25 @@ function App() {
               {w.peak && <span className="peak-badge">PEAK</span>}
               {"שבוע "+w.weekNum}
             </div>
-            {editOpenWeeks[wi] && ["workout1","workout2","cardio","flexibility"].map(type => {
-              var exArr = w.gym[type] || [];
-              if (!exArr.length && type !== "workout1" && type !== "workout2") return null;
-              return <div className="editor-type" key={type}>
-                <div className="editor-type-header">{TI[type]+" "+TN[type]+" ("+exArr.length+")"}</div>
+            {editOpenWeeks[wi] && [1,2,3].map(tNum => {
+              var td = (w.trainings||{})[tNum];
+              if (!td) return null;
+              var exArr = td.exercises||[];
+              return <div className="editor-type" key={tNum}>
+                <div className="editor-type-header">{TI["training"+tNum]+" "+TN["training"+tNum]+" ("+exArr.length+")"}</div>
                 {exArr.map((ex,ei) => <div className="editor-ex" key={ei}>
-                  <span style={{fontSize:11,color:"var(--text3)",minWidth:18}}>{ei+1}</span>
-                  <input className="editor-ex-input" value={ex} onChange={e=>editExName(wi,type,ei,e.target.value)} />
-                  <button className="editor-ex-del" onClick={()=>deleteEx(wi,type,ei)}>✕</button>
+                  <span style={{fontSize:11,color:"var(--accent)",minWidth:28}}>{ex.code}</span>
+                  <input className="editor-ex-input" value={ex.name} onChange={e=>{
+                    setEditCycle(p=>{var n=JSON.parse(JSON.stringify(p));n.weeks[wi].trainings[tNum].exercises[ei].name=e.target.value;return n;});
+                  }} />
+                  <button className="editor-ex-del" onClick={()=>{
+                    setEditCycle(p=>{var n=JSON.parse(JSON.stringify(p));n.weeks[wi].trainings[tNum].exercises.splice(ei,1);return n;});
+                  }}>✕</button>
                 </div>)}
-                <button className="editor-add" onClick={()=>addEx(wi,type)}>+ הוסף תרגיל</button>
+                {(td.cardio||[]).length > 0 && <div style={{padding:"6px 14px",borderTop:"1px solid var(--bg4)"}}>
+                  <div style={{fontSize:11,color:"var(--orange)",fontWeight:700}}>{(td.cardioType||"tabata").toUpperCase()}</div>
+                  {td.cardio.map((ex,ei)=><div style={{fontSize:12,color:"var(--text2)",paddingRight:8,marginTop:2}} key={ei}>{(ei+1)+". "+ex}</div>)}
+                </div>}
               </div>;
             })}
           </div>)}
@@ -1075,21 +1142,25 @@ function App() {
             </div>
             {dashLogs.map(log=><div className="hist-card" key={log.id}>
               <div className="hist-date">{log.date+" · "+log.time}</div>
-              <div className="hist-info">{TN[log.type]||log.type}{log.cardioMode?" · "+(log.cardioMode==="amrap"?"AMRAP":"TABATA"):""}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"בית")}</div>
-              {log.type==="cardio" ? <div className="hist-detail">
-                {log.workTime && <span>{"⏱ עבודה: "+log.workTime+" "}</span>}
-                {log.restTime && <span>{"😮‍💨 מנוחה: "+log.restTime}</span>}
-                {(log.cardioExercises||[]).map((ex,i)=><div key={i} style={{marginTop:i===0?4:0}}>{(i+1)+". "+ex}</div>)}
-                {log.cardioNotes && <div className="hist-note" style={{marginTop:4}}>{"💬 "+log.cardioNotes}</div>}
-              </div> :
-              <div className="hist-detail">{(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
-                <strong>{(ex.name||"").substring(0,50)}</strong><br/>
-                {(ex.sets||[]).map((s,si)=><span key={si}>
-                  {(s.weight?s.weight+"kg":"")+" "+(s.reps?"×"+s.reps:"")}
-                  {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
-                  {si<ex.sets.length-1?" | ":""}
-                </span>)}
-              </div>)}</div>}
+              <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"קיר")}</div>
+              <div className="hist-detail">
+                {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+                  <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
+                  {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
+                  {(ex.sets||[]).map((s,si)=><span key={si}>
+                    {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
+                    {s.variant && <span className="hist-note">{" "+s.variant}</span>}
+                    {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+                    {si<ex.sets.length-1?" | ":""}
+                  </span>)}
+                </div>)}
+                {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
+                  <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"").toUpperCase()+" "}</span>
+                  {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
+                  {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
+                  {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
+                </div>}
+              </div>
             </div>)}
           </div>}
         </div>}
