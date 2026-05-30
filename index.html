@@ -899,19 +899,18 @@ function App() {
                 {openEx[idx] && <div className="sets-area">
                   <div className="sets-header" style={{gap:4}}>
                     <div className="set-label"></div>
-                    <div style={{flex:1.2}} className="sets-header-label">משקל</div>
-                    <div style={{flex:1}} className="sets-header-label">חזרות</div>
-                    <div style={{flex:0.8}} className="sets-header-label">RIR</div>
+                        <div style={{flex:2}} className="sets-header-label">משקל</div>
+                        <div style={{flex:2}} className="sets-header-label">חזרות</div>
+                        <div style={{flex:1}} className="sets-header-label">RIR</div>
                     <div style={{width:30}}></div>
                   </div>
                   {(curSets[idx]||[]).map((s,si)=><div key={si}>
                     <div className="set-row">
                       <div className="set-label">{si+1}</div>
-                       <input className="set-input" type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
-                        <input className="set-input" type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
-                        <input className="set-input" style={{flex:"0.7",minWidth:48}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
-                      <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
-                    </div>
+                        <input className="set-input" style={{flex:2}} type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                        <input className="set-input" style={{flex:2}} type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                        <input className="set-input" style={{flex:1,minWidth:0}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />                      <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
+                      </div>
                     <div className="set-notes-row">
                       <input className="set-notes" type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
                     </div>
