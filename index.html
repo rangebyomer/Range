@@ -524,15 +524,39 @@ function normExName(name) {
     .toLowerCase();
 }
 
-// Find the most recent previous performance of an exercise across all logs.
+// Base-movement keyword = first word of the normalized name.
+// "סקוואט טמפו 3 שנ ירידה" -> "סקוואט". A squat is always a squat.
+function exKeyword(name) {
+  var n = normExName(name);
+  if (!n) return "";
+  var words = n.split(" ").filter(Boolean);
+  return words[0] || "";
+}
+// Superset block letter from a group ("a") or a code ("A1") -> "a".
+function exGroupOf(groupOrCode) {
+  var s = String(groupOrCode || "").trim().toLowerCase();
+  return s ? s[0] : "";
+}
+
+// Find the most recent previous performance of a movement across all logs.
+// Matches by base-movement keyword, scoped to the same superset block (A/B/C):
+// an "A" exercise only looks at past "A" exercises, "B" only at "B", etc.
 // logs are ordered newest-first. excludeId skips the current in-progress session.
-function getLastPerf(exName, logs, excludeId) {
-  var key = normExName(exName);
-  if (!key) return null;
+function getLastPerf(ex, logs, excludeId) {
+  if (!ex) return null;
+  var keyword = exKeyword(ex.name);
+  if (!keyword) return null;
+  var grp = exGroupOf(ex.group || ex.code);
   for (var i = 0; i < (logs || []).length; i++) {
     var lg = logs[i];
     if (excludeId && lg.id === excludeId) continue;
-    var match = (lg.exercises || []).find(function(e) { return normExName(e.name) === key; });
+    var match = (lg.exercises || []).find(function(e) {
+      var eGrp = exGroupOf(e.group || e.code);
+      // require same block when both sides know their block (lenient for old logs)
+      if (grp && eGrp && grp !== eGrp) return false;
+      var words = normExName(e.name).split(" ").filter(Boolean);
+      return words.indexOf(keyword) !== -1;
+    });
     if (match && (match.sets || []).some(function(s) { return s.weight != null || s.reps != null; })) {
       return { date: lg.date, sets: match.sets, cycleName: lg.cycleName, weekNum: lg.weekNum };
     }
@@ -701,6 +725,7 @@ function App() {
         var ex = exercises[parseInt(ei)];
         exLogs.push({
           code: ex ? ex.code : "",
+          group: ex ? (ex.group || (ex.code ? String(ex.code)[0].toLowerCase() : "")) : "",
           name: ex ? ex.name : "",
           targetReps: ex ? ex.reps : "",
           sets: filled.map(s=>({
@@ -1027,7 +1052,7 @@ function App() {
           {exercises.map((ex,idx) => {
             var grp = getGroup(ex);
             var showLabel = isGroupStart(exercises, idx);
-            var lastPerf = getLastPerf(ex.name, logs, sessionLogId);
+            var lastPerf = getLastPerf(ex, logs, sessionLogId);
             var lastSummary = lastPerf ? (lastPerf.sets||[])
               .filter(s => s.weight != null || s.reps != null)
               .map(s => [s.weight != null ? s.weight + "ק״ג" : "", s.reps != null ? "×" + s.reps : ""].filter(Boolean).join(""))
