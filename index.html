@@ -234,6 +234,42 @@ input[type="file"]{display:none}
 .dash-user-count{font-size:12px;color:var(--accent);font-weight:700}
 .dash-filter{display:flex;gap:8px;padding:0 16px;margin:8px 0;flex-wrap:wrap}
 .dash-filter .chip{padding:6px 14px;font-size:12px}
+
+/* CHIP HIERARCHY */
+.chip.current{border-color:var(--accent);background:rgba(139,156,247,.18);color:var(--accentBright);font-size:15px;padding:11px 20px}
+.chip.prev{border-color:var(--bg4);background:var(--bg3);color:var(--text2);opacity:.75}
+.chip.old{border-color:transparent;background:var(--bg2);color:var(--text3);font-size:13px;padding:7px 14px}
+.show-more-btn{background:none;border:1px dashed var(--bg4);border-radius:50px;color:var(--text3);font-size:12px;font-weight:600;padding:7px 16px;cursor:pointer;margin:4px 0}
+.show-more-btn:active{background:var(--bg3)}
+
+/* COLLAPSIBLE HISTORY */
+.hist-cycle-group{margin:8px 16px}
+.hist-cycle-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);cursor:pointer;transition:.15s}
+.hist-cycle-header:active{background:var(--bg3)}
+.hist-cycle-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
+.hist-cycle-title{font-size:14px;font-weight:700;color:var(--accent)}
+.hist-cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.hist-cycle-chevron{color:var(--text3);font-size:14px;transition:.2s}
+.hist-cycle-body{background:var(--bg2);border:1px solid var(--bg4);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);overflow:hidden}
+
+.hist-week-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;border-top:1px solid var(--bg4)}
+.hist-week-header:first-child{border-top:none}
+.hist-week-header:active{background:var(--bg3)}
+.hist-week-title{font-size:12px;font-weight:700;color:var(--text2)}
+.hist-week-count{font-size:11px;color:var(--text3)}
+
+.hist-log-item{padding:12px 14px;border-top:1px solid rgba(255,255,255,.04)}
+.hist-log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.hist-log-type{font-size:12px;font-weight:700;color:var(--text)}
+.hist-log-date{font-size:11px;color:var(--text3)}
+.hist-log-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 6px}
+.hist-log-del:active{color:var(--red)}
+
+/* COLLAPSIBLE ADMIN */
+.admin-collapse-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0}
+.admin-collapse-header h3{margin-bottom:0}
+.user-search{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;margin:10px 0 4px}
+.user-search:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -545,6 +581,14 @@ function App() {
   const [dashLogs, setDashLogs] = React.useState([]);
   const [dashLoading, setDashLoading] = React.useState(false);
   const [userLogCounts, setUserLogCounts] = React.useState({});
+
+  // Collapsible UI state
+  const [showOldCycles, setShowOldCycles] = React.useState(false);
+  const [openHistCycles, setOpenHistCycles] = React.useState({});
+  const [openHistWeeks, setOpenHistWeeks] = React.useState({});
+  const [adminCyclesOpen, setAdminCyclesOpen] = React.useState(false);
+  const [adminUsersOpen, setAdminUsersOpen] = React.useState(false);
+  const [userSearch, setUserSearch] = React.useState("");
 
   // Auth listener
   React.useEffect(() => {
@@ -911,7 +955,17 @@ function App() {
         ) : (<div>
           <div className="section-title">בחרו סייקל</div>
           <div className="chips">
-            {cycles.map(c=><div key={c.id} className={"chip"+(selCycleId===c.id?" active":"")} onClick={()=>{setSelCycleId(c.id);setSelWeek(null);setSelType(null);}}>{c.name}</div>)}
+            {cycles.length > 0 && (() => {
+              var latest = cycles[0];
+              var prev = cycles[1];
+              var older = cycles.slice(2);
+              return <>
+                <div className={"chip current"+(selCycleId===latest.id?" active":"")} onClick={()=>{setSelCycleId(latest.id);setSelWeek(null);setSelType(null);}}>{latest.name}</div>
+                {prev && <div className={"chip prev"+(selCycleId===prev.id?" active":"")} onClick={()=>{setSelCycleId(prev.id);setSelWeek(null);setSelType(null);}}>{prev.name}</div>}
+                {older.length > 0 && !showOldCycles && <button className="show-more-btn" onClick={()=>setShowOldCycles(true)}>+ {older.length} סייקלים ישנים</button>}
+                {showOldCycles && older.map(c=><div key={c.id} className={"chip old"+(selCycleId===c.id?" active":"")} onClick={()=>{setSelCycleId(c.id);setSelWeek(null);setSelType(null);}}>{c.name}</div>)}
+              </>;
+            })()}
           </div>
 
           {cycle && <div>
@@ -1009,9 +1063,8 @@ function App() {
                 {openEx[idx] && <div className="sets-area">
                   <div className="sets-header" style={{gap:4}}>
                     <div className="set-label"></div>
-                    <div style={{flex:1.2}} className="sets-header-label">משקל</div>
+                    <div style={{flex:1}} className="sets-header-label">משקל</div>
                     <div style={{flex:1}} className="sets-header-label">חזרות</div>
-                    <div style={{flex:0.8}} className="sets-header-label">RIR</div>
                     <div style={{width:30}}></div>
                   </div>
                   {(curSets[idx]||[]).map((s,si)=>{
@@ -1019,13 +1072,13 @@ function App() {
                     return <div key={si}>
                     <div className="set-row" style={{gap:4}}>
                       <div className="set-label">{si+1}</div>
-                      <input className="set-input" style={{flex:1.2}} type="number" inputMode="decimal" placeholder={lpSet && lpSet.weight!=null ? String(lpSet.weight) : "ק״ג"} value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                      <input className="set-input" style={{flex:1}} type="number" inputMode="decimal" placeholder={lpSet && lpSet.weight!=null ? String(lpSet.weight) : "ק״ג"} value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
                       <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder={lpSet && lpSet.reps!=null ? String(lpSet.reps) : "חז'"} value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
-                      <input className="set-input" style={{flex:0.8}} type="number" inputMode="numeric" placeholder={lpSet && lpSet.rir!=null && lpSet.rir!=="" ? String(lpSet.rir) : "RIR"} value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
                       <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
                     </div>
-                    <div className="set-notes-row">
-                      <input className="set-notes" type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
+                    <div className="set-notes-row" style={{gap:4}}>
+                      <input className="set-notes" style={{flex:"0 0 56px",textAlign:"center"}} type="number" inputMode="numeric" placeholder={lpSet && lpSet.rir!=null && lpSet.rir!=="" ? String(lpSet.rir) : "RIR"} value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
+                      <input className="set-notes" style={{flex:1}} type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
                     </div>
                   </div>;
                   })}
@@ -1084,29 +1137,82 @@ function App() {
           <div className="logo-text" style={{fontSize:22}}>היסטוריה</div>
         </div>
         {!logs.length ? <div className="empty"><div className="empty-icon">📋</div><div>עדיין אין אימונים שמורים</div></div> :
-        logs.map(log=><div className="hist-card" key={log.id}>
-          <button className="hist-del" onClick={()=>deleteLog(log.id)}>🗑</button>
-          <div className="hist-date">{log.date+" · "+log.time}</div>
-          <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"קיר")}</div>
-          <div className="hist-detail">
-            {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
-              <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
-              {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
-              {(ex.sets||[]).map((s,si)=><span key={si}>
-                {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
-                {s.variant && <span className="hist-note">{" "+s.variant}</span>}
-                {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
-                {si<ex.sets.length-1?" | ":""}
-              </span>)}
-            </div>)}
-            {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
-              <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"tabata").toUpperCase()+" "}</span>
-              {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
-              {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
-              {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
-            </div>}
-          </div>
-        </div>)}
+        (() => {
+          // Group logs: cycleId > weekNum > logs[]
+          var grouped = {};
+          var cycleOrder = [];
+          logs.forEach(log => {
+            var cid = log.cycleId||"unknown";
+            var cname = log.cycleName||cid;
+            if (!grouped[cid]) { grouped[cid] = {name:cname, weeks:{}}; cycleOrder.push(cid); }
+            var wk = log.weekNum||0;
+            if (!grouped[cid].weeks[wk]) grouped[cid].weeks[wk] = [];
+            grouped[cid].weeks[wk].push(log);
+          });
+          // dedupe cycleOrder
+          cycleOrder = [...new Set(cycleOrder)];
+          return cycleOrder.map(cid => {
+            var cg = grouped[cid];
+            var isOpen = openHistCycles[cid];
+            var weekKeys = Object.keys(cg.weeks).sort((a,b)=>b-a);
+            var totalLogs = weekKeys.reduce((s,w)=>s+cg.weeks[w].length,0);
+            return <div className="hist-cycle-group" key={cid}>
+              <div className={"hist-cycle-header"+(isOpen?" open":"")} onClick={()=>setOpenHistCycles(p=>({...p,[cid]:!p[cid]}))}>
+                <div>
+                  <div className="hist-cycle-title">{cg.name}</div>
+                  <div className="hist-cycle-meta">{totalLogs+" אימונים · "+weekKeys.length+" שבועות"}</div>
+                </div>
+                <span className="hist-cycle-chevron">{isOpen?"▾":"◂"}</span>
+              </div>
+              {isOpen && <div className="hist-cycle-body">
+                {weekKeys.map(wk => {
+                  var wkey = cid+"_w"+wk;
+                  var wOpen = openHistWeeks[wkey];
+                  var wlogs = cg.weeks[wk];
+                  return <div key={wk}>
+                    <div className="hist-week-header" onClick={()=>setOpenHistWeeks(p=>({...p,[wkey]:!p[wkey]}))}>
+                      <div className="hist-week-title">{"שבוע "+wk}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span className="hist-week-count">{wlogs.length+" אימונים"}</span>
+                        <span className="hist-cycle-chevron">{wOpen?"▾":"◂"}</span>
+                      </div>
+                    </div>
+                    {wOpen && wlogs.map(log=><div className="hist-log-item" key={log.id}>
+                      <div className="hist-log-header">
+                        <div>
+                          <span className="hist-log-type">{TN[log.type]||log.type}</span>
+                          <span style={{fontSize:11,color:"var(--text3)",marginRight:8}}>{" · "+(log.location==="gym"?"סטודיו":"קיר")}</span>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span className="hist-log-date">{log.date+(log.time?" · "+log.time:"")}</span>
+                          <button className="hist-log-del" onClick={()=>deleteLog(log.id)}>🗑</button>
+                        </div>
+                      </div>
+                      <div className="hist-detail">
+                        {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+                          <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
+                          {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
+                          {(ex.sets||[]).map((s,si)=><span key={si}>
+                            {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
+                            {s.variant && <span className="hist-note">{" "+s.variant}</span>}
+                            {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+                            {si<ex.sets.length-1?" | ":""}
+                          </span>)}
+                        </div>)}
+                        {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
+                          <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"tabata").toUpperCase()+" "}</span>
+                          {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
+                          {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
+                          {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
+                        </div>}
+                      </div>
+                    </div>)}
+                  </div>;
+                })}
+              </div>}
+            </div>;
+          });
+        })()}
       </div>}
 
       {/* ===== ADMIN / SETTINGS ===== */}
@@ -1142,27 +1248,42 @@ function App() {
           </div>
 
           <div className="admin-card">
-            <h3>📊 סייקלים קיימים</h3>
-            <p style={{fontSize:11,color:"var(--text3)",marginBottom:8}}>לחצו על סייקל כדי לערוך תרגילים</p>
-            {cycles.length ? cycles.map(c=><div className="cycle-card" key={c.id} style={{margin:"8px 0",cursor:"pointer"}} onClick={()=>startEditCycle(c)}>
-              <div>
-                <div className="cycle-name">{c.name} ✏️</div>
-                <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"+(c.coachName?" · "+c.coachName:"")}</div>
-              </div>
-              <button className="cycle-del" onClick={(e)=>{e.stopPropagation();deleteCycle(c.id);}}>🗑</button>
-            </div>) : <p>אין סייקלים</p>}
+            <div className="admin-collapse-header" onClick={()=>setAdminCyclesOpen(p=>!p)}>
+              <h3>📊 סייקלים קיימים ({cycles.length})</h3>
+              <span style={{color:"var(--text3)",fontSize:18}}>{adminCyclesOpen?"▾":"◂"}</span>
+            </div>
+            {adminCyclesOpen && <>
+              <p style={{fontSize:11,color:"var(--text3)",margin:"8px 0"}}>לחצו על סייקל כדי לערוך תרגילים</p>
+              {cycles.length ? cycles.map((c,ci)=><div className="cycle-card" key={c.id} style={{margin:"8px 0",cursor:"pointer",opacity:ci===0?1:ci===1?.75:.5}} onClick={()=>startEditCycle(c)}>
+                <div>
+                  <div className="cycle-name">{c.name} ✏️{ci===0 && <span style={{fontSize:10,color:"var(--green)",marginRight:6}}>● נוכחי</span>}</div>
+                  <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"+(c.coachName?" · "+c.coachName:"")}</div>
+                </div>
+                <button className="cycle-del" onClick={(e)=>{e.stopPropagation();deleteCycle(c.id);}}>🗑</button>
+              </div>) : <p>אין סייקלים</p>}
+            </>}
           </div>
 
           <div className="admin-card">
-            <h3>👥 משתמשים ({allUsers.length})</h3>
-            {allUsers.map(u=><div className="user-row" key={u.uid}>
-              <img className="user-avatar" src={u.photoURL} onError={e=>{e.target.style.background="var(--bg4)"}} />
-              <div className="user-info">
-                <div className="user-name">{u.displayName||"—"}</div>
-                <div className="user-email">{u.email}</div>
-              </div>
-              <span className={"user-badge "+(u.role||"trainee")}>{u.role==="admin"?"אדמין":"מתאמן/ת"}</span>
-            </div>)}
+            <div className="admin-collapse-header" onClick={()=>setAdminUsersOpen(p=>!p)}>
+              <h3>👥 משתמשים ({allUsers.length})</h3>
+              <span style={{color:"var(--text3)",fontSize:18}}>{adminUsersOpen?"▾":"◂"}</span>
+            </div>
+            {adminUsersOpen && <>
+              <input className="user-search" type="text" placeholder="🔍 חיפוש לפי שם או מייל..." value={userSearch} onChange={e=>setUserSearch(e.target.value)} />
+              {allUsers.filter(u=>{
+                var q = userSearch.trim().toLowerCase();
+                if (!q) return true;
+                return (u.displayName||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q);
+              }).map(u=><div className="user-row" key={u.uid}>
+                <img className="user-avatar" src={u.photoURL} onError={e=>{e.target.style.background="var(--bg4)"}} />
+                <div className="user-info">
+                  <div className="user-name">{u.displayName||"—"}</div>
+                  <div className="user-email">{u.email}</div>
+                </div>
+                <span className={"user-badge "+(u.role||"trainee")}>{u.role==="admin"?"אדמין":"מתאמן/ת"}</span>
+              </div>)}
+            </>}
           </div>
         </div>}
 
