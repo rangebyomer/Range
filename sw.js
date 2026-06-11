@@ -1,4 +1,4 @@
-var CACHE_NAME = 'range-v1';
+var CACHE_NAME = 'range-v2';
 var URLS_TO_CACHE = [
   './',
   './index.html',
@@ -33,6 +33,11 @@ self.addEventListener('activate', function(e) {
   self.clients.claim();
 });
 
+// Allow the page to tell a freshly-installed SW to take over immediately
+self.addEventListener('message', function(e) {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
 self.addEventListener('fetch', function(e) {
   // Network first for Firebase/API calls
   if (e.request.url.indexOf('firebasejs') >= 0 ||
@@ -46,7 +51,29 @@ self.addEventListener('fetch', function(e) {
     );
     return;
   }
-  // Cache first for static assets
+
+  // Network first for the app shell (HTML) — always try the server first so a
+  // newly deployed index.html is picked up; fall back to cache only when offline.
+  if (e.request.mode === 'navigate' ||
+      e.request.url.indexOf('index.html') >= 0 ||
+      e.request.url.endsWith('/Range/') ||
+      e.request.url.endsWith('/Range') ||
+      e.request.url.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request).then(function(response) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, clone); });
+        return response;
+      }).catch(function() {
+        return caches.match(e.request).then(function(r) {
+          return r || caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache first for other static assets (fonts, libs, icons)
   e.respondWith(
     caches.match(e.request).then(function(resp) {
       return resp || fetch(e.request).then(function(response) {
