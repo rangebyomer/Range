@@ -849,6 +849,26 @@ function App() {
     setUploading(true);
     try {
       var cycleData = await parseWaveXlsx(uploadFile);
+
+      // הגנה 1: סייקל ריק (גליונות לא נקראו נכון) — לא שומרים
+      if (!(cycleData.weeks || []).length) {
+        flash("הקובץ נקרא אבל לא נמצאו שבועות — בדקו ששמות הגליונות הם 1,2,3...", true);
+        setUploading(false);
+        return;
+      }
+
+      // הגנה 2: בדיקת התנגשות מספר לפני דריסה
+      var clash = cycles.find(c => c.id === cycleData.id);
+      if (clash) {
+        var ok = confirm(
+          "כבר קיים סייקל עם מספר #" + cycleData.number + " (\"" + clash.name + "\").\n\n" +
+          "העלאה תדרוס אותו לגמרי!\n\n" +
+          "אם זה סייקל חדש — בטלו, שנו את המספר (#) בתא B2 בקובץ, והעלו שוב.\n" +
+          "להמשיך ולדרוס?"
+        );
+        if (!ok) { setUploading(false); return; }
+      }
+
       await DB.saveCycle(cycleData);
       setCycles(p => [cycleData, ...p.filter(c=>c.id!==cycleData.id)]);
       setUploadFile(null);
