@@ -761,8 +761,10 @@ function App() {
   const toggleEx = (idx, ex) => {
     setOpenEx(p => ({...p, [idx]: !p[idx]}));
     if (!curSets[idx]) {
-      // Pre-fill sets based on the exercise spec (sets count from xlsx)
-      var numSets = ex && ex.sets ? parseInt(ex.sets) || 3 : 3;
+      // Pre-fill sets based on the exercise spec. For a range like "2-3",
+      // parseInt yields the lower number (2). When sets is missing or unparseable,
+      // default to 2 rows. The trainee can always add or remove rows freely.
+      var numSets = ex && ex.sets ? parseInt(ex.sets) || 2 : 2;
       var preset = ex && ex.variant ? ex.variant : "";
       var initSets = [];
       for (var s=0; s<numSets; s++) initSets.push({weight:"",reps:"",rir:"",variant:preset,notes:""});
