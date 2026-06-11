@@ -1,4 +1,4 @@
-var CACHE_NAME = 'range-v2';
+var CACHE_NAME = 'range-v3';
 var URLS_TO_CACHE = [
   './',
   './index.html',
