@@ -108,18 +108,18 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 .ex-chevron{color:var(--text3);font-size:18px;flex-shrink:0}
 
 /* SETS */
-.sets-area{padding:0 16px 14px;border-top:1px solid var(--bg4)}
-.sets-header{display:flex;gap:8px;margin:10px 0 2px}
+.sets-area{padding:0 12px 12px;border-top:1px solid var(--bg4)}
+.sets-header{display:flex;gap:6px;margin:8px 0 2px}
 .sets-header-label{font-size:10px;color:var(--text3);font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.5px}
-.set-row{display:flex;align-items:center;gap:8px;margin-top:8px}
-.set-label{min-width:28px;font-size:12px;color:var(--text3);font-weight:600;text-align:center}
-.set-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
+.set-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.set-label{min-width:20px;font-size:12px;color:var(--text3);font-weight:600;text-align:center}
+.set-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:9px;padding:8px 8px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
 .set-input:focus{border-color:var(--accent)}
-.set-notes-row{display:flex;margin-top:4px;padding-right:36px;padding-left:38px}
-.set-notes{flex:1;min-width:0;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;outline:none;transition:.15s}
+.set-notes-row{display:flex;margin-top:4px;padding-right:26px;padding-left:30px;gap:6px}
+.set-notes{flex:1;min-width:0;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:6px 9px;color:var(--text2);font-size:12px;outline:none;transition:.15s}
 .set-notes:focus{border-color:var(--accent);color:var(--text)}
 .set-notes::placeholder{color:var(--text3)}
-.set-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:6px;width:30px;transition:.15s}
+.set-del{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px;width:24px;flex-shrink:0;transition:.15s}
 .set-del:active{color:var(--red)}
 .add-set-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;margin-top:10px;background:var(--bg3);border:1px dashed var(--bg4);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
 .add-set-btn:active{background:var(--bg4);border-color:var(--accent)}
@@ -538,6 +538,27 @@ function exGroupOf(groupOrCode) {
   return s ? s[0] : "";
 }
 
+// Translate the coach's shorthand in the reps/spec field into readable Hebrew:
+//   *  marks repetitions   ("*5-8"  -> "5-8 חזרות")
+//   '  marks seconds       ("30'"   -> "30 שניות",  "0:45'" -> "0:45 שניות")
+// A value with neither symbol is shown as-is. The * / ' may sit before or after
+// the number. Note: this only formats the spec line; it never touches an
+// exercise NAME (e.g. "טמפו 3 שנ' ירידה" stays exactly as written).
+function describeSpec(spec) {
+  var r = String(spec == null ? "" : spec).trim();
+  if (!r) return "";
+  if (r.indexOf("*") >= 0) {
+    var reps = r.replace(/\*/g, "").trim();
+    return reps ? reps + " חזרות" : "";
+  }
+  // seconds marker: straight apostrophe ' or Hebrew geresh ׳, attached to a digit
+  if (/[0-9][\s]*['׳]/.test(r) || /['׳][\s]*[0-9]/.test(r)) {
+    var secs = r.replace(/['׳]/g, "").trim();
+    return secs ? secs + " שניות" : "";
+  }
+  return r;
+}
+
 // Find the most recent previous performance of a movement across all logs.
 // Matches by base-movement keyword, scoped to the same superset block (A/B/C):
 // an "A" exercise only looks at past "A" exercises, "B" only at "B", etc.
@@ -926,15 +947,15 @@ function App() {
   };
   const exportUserCsv = () => {
     if (!dashLogs.length || !dashUser) return;
-    var rows = [["תאריך","שעה","סייקל","שבוע","אימון","מיקום","קוד","תרגיל","יעד חזרות","סט","משקל","חזרות","RIR","וריאציה","הערות"]];
+    var rows = [["תאריך","שעה","סייקל","שבוע","אימון","קוד","תרגיל","יעד חזרות","סט","משקל","חזרות","RIR","וריאציה","הערות"]];
     dashLogs.forEach(function(log) {
       (log.exercises||[]).forEach(function(ex) {
         (ex.sets||[]).forEach(function(s, si) {
-          rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", log.location==="gym"?"סטודיו":"קיר", ex.code||"", ex.name||"", ex.targetReps||"", si+1, s.weight||"", s.reps||"", s.rir||"", s.variant||"", s.notes||""]);
+          rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", ex.code||"", ex.name||"", ex.targetReps||"", si+1, s.weight||"", s.reps||"", s.rir||"", s.variant||"", s.notes||""]);
         });
       });
       if (log.cardio) {
-        rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", log.location==="gym"?"סטודיו":"קיר", (log.cardio.type||"").toUpperCase(), (log.cardio.exercises||[]).join("|"), "", "", "", "", "", "", log.cardio.workTime+"/"+log.cardio.restTime+(log.cardio.notes?" "+log.cardio.notes:"")]);
+        rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", (log.cardio.type||"").toUpperCase(), (log.cardio.exercises||[]).join("|"), "", "", "", "", "", "", log.cardio.workTime+"/"+log.cardio.restTime+(log.cardio.notes?" "+log.cardio.notes:"")]);
       }
     });
     var csv = "\uFEFF" + rows.map(function(r){return r.join(",");}).join("\n");
@@ -1061,11 +1082,6 @@ function App() {
           <button className="today-btn" onClick={()=>setWorkoutDate(new Date().toISOString().split("T")[0])}>היום</button>
         </div>
 
-        {/* Location toggle */}
-        <div className="loc-toggle">
-          <button className={"loc-btn"+(loc==="home"?" active":"")} onClick={()=>setLoc("home")}>🧱 קיר</button>
-          <button className={"loc-btn"+(loc==="gym"?" active":"")} onClick={()=>setLoc("gym")}>🏋️ סטודיו</button>
-        </div>
 
         {/* EXERCISES */}
         <div style={{marginTop:12}}>
@@ -1089,14 +1105,14 @@ function App() {
                   <div style={{flex:1}}>
                     <div className="ex-name">{ex.name}</div>
                     <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>
-                      {ex.reps && <span>{ex.reps} חז' </span>}
+                      {ex.reps && <span>{describeSpec(ex.reps)} </span>}
                       {ex.sets && <span>· {ex.sets} סטים </span>}
                       {ex.rir && <span>· RIR {ex.rir}</span>}
                       {ex.variant && <span style={{color:"var(--accent)"}}> · {ex.variant}</span>}
                     </div>
                     {ex.extraSets && ex.extraSets.map((es,esi)=>(
                       <div key={esi} style={{fontSize:10,color:"var(--text3)"}}>
-                        {"+ "+es.reps+" | "+es.sets+" סטים | RIR "+es.rir+(es.variant?" | "+es.variant:"")}
+                        {"+ "+describeSpec(es.reps)+" | "+es.sets+" סטים | RIR "+es.rir+(es.variant?" | "+es.variant:"")}
                       </div>
                     ))}
                     {lastSummary && <div style={{fontSize:11,color:"var(--green)",marginTop:3,fontWeight:600}}>
@@ -1110,19 +1126,18 @@ function App() {
                     <div className="set-label"></div>
                     <div style={{flex:1}} className="sets-header-label">משקל</div>
                     <div style={{flex:1}} className="sets-header-label">חזרות</div>
-                    <div style={{width:30}}></div>
+                    <div style={{width:24}}></div>
                   </div>
                   {(curSets[idx]||[]).map((s,si)=>{
-                    var lpSet = lastPerf && lastPerf.sets ? lastPerf.sets[si] : null;
                     return <div key={si}>
                     <div className="set-row" style={{gap:4}}>
                       <div className="set-label">{si+1}</div>
-                      <input className="set-input" style={{flex:1}} type="number" inputMode="decimal" placeholder={lpSet && lpSet.weight!=null ? String(lpSet.weight) : "ק״ג"} value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
-                      <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder={lpSet && lpSet.reps!=null ? String(lpSet.reps) : "חז'"} value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
+                      <input className="set-input" style={{flex:1}} type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
+                      <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
                       <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
                     </div>
                     <div className="set-notes-row" style={{gap:4}}>
-                      <input className="set-notes" style={{flex:"0 0 56px",textAlign:"center"}} type="number" inputMode="numeric" placeholder={lpSet && lpSet.rir!=null && lpSet.rir!=="" ? String(lpSet.rir) : "RIR"} value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
+                      <input className="set-notes" style={{flex:"0 0 56px",textAlign:"center"}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
                       <input className="set-notes" style={{flex:1}} type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
                     </div>
                   </div>;
@@ -1226,7 +1241,6 @@ function App() {
                       <div className="hist-log-header">
                         <div>
                           <span className="hist-log-type">{TN[log.type]||log.type}</span>
-                          <span style={{fontSize:11,color:"var(--text3)",marginRight:8}}>{" · "+(log.location==="gym"?"סטודיו":"קיר")}</span>
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
                           <span className="hist-log-date">{log.date+(log.time?" · "+log.time:"")}</span>
@@ -1426,7 +1440,7 @@ function App() {
             </div>
             {dashLogs.map(log=><div className="hist-card" key={log.id}>
               <div className="hist-date">{log.date+" · "+log.time}</div>
-              <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum+" · "+(log.location==="gym"?"סטודיו":"קיר")}</div>
+              <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum}</div>
               <div className="hist-detail">
                 {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
                   <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
@@ -1473,11 +1487,28 @@ ReactDOM.render(React.createElement(App), document.getElementById("root"));
 </script>
 
 <script>
-// Register Service Worker for PWA
+// Register Service Worker for PWA — with auto-update so new versions
+// roll out without a hard refresh on every device.
 if ('serviceWorker' in navigator) {
+  var swRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    if (swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js').then(function(reg) {
-      console.log('SW registered:', reg.scope);
+      reg.update();
+      reg.addEventListener('updatefound', function() {
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function() {
+          // A new SW is installed and an old one is in control -> activate it now
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            nw.postMessage('skipWaiting');
+          }
+        });
+      });
     }).catch(function(err) {
       console.log('SW registration failed:', err);
     });
