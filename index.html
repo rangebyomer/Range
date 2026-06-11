@@ -355,12 +355,43 @@ var DB = {
 // Cardio/AMRAP = TABATA🚀 or AMRAP🚀 section at end of each workout
 // Sheet 5 = PEAK week
 // =====================================================
+
+// Resolve a cell to the value the coach actually intended.
+// Problem: Excel converts hyphen ranges typed into non-text cells (e.g. a coach
+// typing "2-3" for sets or RIR) into real DATES. Depending on read options the
+// raw value (rawV) then comes through as either a Date object or an Excel serial
+// number (~40000-60000), while the DISPLAYED text (dispW, the cell's .w) still
+// shows the intended "2-3" (or "2-3" rendered via a d-m format).
+// Strategy:
+//   - If rawV looks like a corrupted date (Date object, or serial > 40000), trust
+//     the displayed text dispW instead — that's the coach's real value.
+//   - The d-m number format renders 2026-03-02 as "2-3", which is exactly the
+//     range the coach meant, so dispW is correct as-is.
+//   - Otherwise return the raw value as a trimmed string.
+// Returns "" when there's genuinely nothing usable.
+function cellText(rawV, dispW) {
+  if (rawV === null || rawV === undefined || rawV === "") {
+    return dispW != null ? String(dispW).trim() : "";
+  }
+  var looksLikeDate =
+    (typeof rawV === "object" && rawV instanceof Date) ||
+    (typeof rawV === "number" && rawV > 40000 && rawV < 60000);
+  if (looksLikeDate) {
+    // Prefer the displayed text; it holds the coach's intended "2-3"-style value.
+    if (dispW != null && String(dispW).trim() !== "") return String(dispW).trim();
+    return ""; // date with no usable display text -> treat as empty, never emit a date
+  }
+  return String(rawV).trim();
+}
+
 function parseWaveXlsx(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
     reader.onload = function(e) {
       try {
-        var wb = XLSX.read(e.target.result, {type:"array"});
+        // cellNF + cellText ensure each cell's formatted .w is computed, so
+        // cellText() can recover hyphen-ranges Excel mangled into dates (e.g. "2-3").
+        var wb = XLSX.read(e.target.result, {type:"array", cellNF:true, cellText:true});
 
         // Extract cycle name/number from cell B2 of sheet 1
         var firstSheet = wb.Sheets[wb.SheetNames[0]];
@@ -379,15 +410,30 @@ function parseWaveXlsx(file) {
           var range = XLSX.utils.decode_range(ws['!ref'] || "A1:M50");
           var maxRow = range.e.r + 1;
 
-          // Collect all rows as arrays
+          // Collect all rows as arrays. We keep BOTH the raw value (.v) and the
+          // formatted/displayed text (.w). Excel turns hyphen ranges like "2-3"
+          // typed into non-text cells into real dates (serial ~46083), so .v is
+          // useless there but .w still shows "2-3". cellText() below prefers the
+          // human-displayed value precisely to recover those corrupted cells.
           var rows = [];
           for (var r = 1; r <= maxRow; r++) {
             var row = [];
             for (var c = 0; c <= 12; c++) {
               var cell = ws[XLSX.utils.encode_cell({r:r-1, c:c})];
-              row.push(cell ? cell.v : null);
+              row.push(cell ? cell.v : null);   // raw value (back-compat with existing code)
             }
             rows.push(row);
+          }
+
+          // Parallel grid of displayed text (.w) for the same cells.
+          var rowsW = [];
+          for (var r2 = 1; r2 <= maxRow; r2++) {
+            var roww = [];
+            for (var c2 = 0; c2 <= 12; c2++) {
+              var cellw = ws[XLSX.utils.encode_cell({r:r2-1, c:c2})];
+              roww.push(cellw && cellw.w != null ? cellw.w : null);
+            }
+            rowsW.push(roww);
           }
 
           // Peak = last sheet OR if title cell contains "פיק"
@@ -401,7 +447,8 @@ function parseWaveXlsx(file) {
           var curTraining = null;
           var inCardio = false;
 
-          rows.forEach(function(row) {
+          rows.forEach(function(row, rowIdx) {
+            var roww = rowsW[rowIdx] || [];
             var colC = row[2] ? String(row[2]).trim() : "";
             var colD = row[3] ? String(row[3]).trim() : "";
             var colE = row[4] ? String(row[4]).trim() : "";
@@ -438,20 +485,18 @@ function parseWaveXlsx(file) {
             // Exercise row: col D has code like A1/A2/B1/B2/C1/C2/C3/C4
             var codeMatch = colD.match(/^([A-C])(\d+)$/);
             if (codeMatch && colE) {
-              var reps = row[5] ? String(row[5]).trim() : "";
-              var sets = row[6];
-              var rir = row[7];
-              var variant = row[8] ? String(row[8]).trim() : "";
-              // Convert numeric dates that are actually "-" or similar
-              if (typeof sets === 'number' && sets > 40000) sets = null; // Excel date artifact
-              if (typeof rir === 'number' && rir > 40000) rir = null;
+              // cellText recovers ranges like "2-3" that Excel corrupted into dates.
+              var reps = cellText(row[5], roww[5]);
+              var sets = cellText(row[6], roww[6]);
+              var rir = cellText(row[7], roww[7]);
+              var variant = cellText(row[8], roww[8]);
               trainings[curTraining].exercises.push({
                 code: colD,
                 group: codeMatch[1].toLowerCase(),
                 name: colE.replace(/\n/g," ").trim(),
                 reps: reps,
-                sets: sets ? String(sets) : "",
-                rir: (rir !== null && rir !== undefined && rir < 40000) ? String(rir) : "",
+                sets: sets,
+                rir: rir,
                 variant: variant
               });
             } else if (!codeMatch && colD && colE && row[5]) {
@@ -459,17 +504,15 @@ function parseWaveXlsx(file) {
               // Attach to last exercise
               var last = trainings[curTraining].exercises[trainings[curTraining].exercises.length - 1];
               if (last) {
-                var reps2 = row[5] ? String(row[5]).trim() : "";
-                var sets2 = row[6];
-                var rir2 = row[7];
-                var variant2 = row[8] ? String(row[8]).trim() : "";
-                if (typeof sets2 === 'number' && sets2 > 40000) sets2 = null;
-                if (typeof rir2 === 'number' && rir2 > 40000) rir2 = null;
+                var reps2 = cellText(row[5], roww[5]);
+                var sets2 = cellText(row[6], roww[6]);
+                var rir2 = cellText(row[7], roww[7]);
+                var variant2 = cellText(row[8], roww[8]);
                 if (!last.extraSets) last.extraSets = [];
                 last.extraSets.push({
                   reps: reps2,
-                  sets: sets2 ? String(sets2) : "",
-                  rir: (rir2 !== null && rir2 !== undefined && rir2 < 40000) ? String(rir2) : "",
+                  sets: sets2,
+                  rir: rir2,
                   variant: variant2
                 });
               }
