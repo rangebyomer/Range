@@ -17,7 +17,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
-  
+
 <!-- SheetJS for xlsx parsing -->
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
@@ -27,7 +27,7 @@
   --bg:#0d1025;--bg2:#151938;--bg3:#1c2148;--bg4:#272d5a;
   --accent:#8b9cf7;--accent2:#6b7ee0;--accentBright:#a4b3ff;
   --text:#e8eaf6;--text2:#8e93b8;--text3:#5a5f82;
-  --green:#4ade80;--red:#f87171;--orange:#fb923c;
+  --green:#4ade80;--red:#f87171;--orange:#fb923c;--yellow:#fbbf24;
   --radius:14px;
   --groupA:#8b9cf7;--groupB:#c084fc;--groupC:#67e8f9;
 }
@@ -69,6 +69,11 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 .chip{padding:10px 18px;border-radius:50px;background:var(--bg3);font-size:14px;font-weight:600;cursor:pointer;border:2px solid transparent;color:var(--text2);transition:.15s}
 .chip:active{transform:scale(.96)}
 .chip.active{border-color:var(--accent);background:rgba(139,156,247,.1);color:var(--accent)}
+.chip.current{border-color:var(--accent);background:rgba(139,156,247,.18);color:var(--accentBright);font-size:15px;padding:11px 20px}
+.chip.prev{border-color:var(--bg4);background:var(--bg3);color:var(--text2);opacity:.75}
+.chip.old{border-color:transparent;background:var(--bg2);color:var(--text3);font-size:13px;padding:7px 14px}
+.show-more-btn{background:none;border:1px dashed var(--bg4);border-radius:50px;color:var(--text3);font-size:12px;font-weight:600;padding:7px 16px;cursor:pointer;margin:4px 0}
+.show-more-btn:active{background:var(--bg3)}
 
 /* WORKOUT TYPE GRID */
 .wt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-top:12px}
@@ -87,7 +92,7 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 /* DATE PICKER */
 .date-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;margin-top:8px}
 .date-bar label{font-size:13px;color:var(--text2);font-weight:600;white-space:nowrap}
-.date-input{flex:1;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
+.date-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
 .date-input:focus{border-color:var(--accent)}
 .today-btn{background:var(--accent2);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer}
 .today-btn:active{transform:scale(.96)}
@@ -95,34 +100,42 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 /* SUPERSET GROUPS */
 .group-label{display:flex;align-items:center;gap:8px;padding:14px 20px 4px}
 .group-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--bg)}
-.group-badge.a{background:var(--groupA)}.group-badge.b{background:var(--groupB)}.group-badge.c{background:var(--groupC)}
+.group-badge.a{background:var(--groupA)}.group-badge.b{background:var(--groupB)}.group-badge.c{background:var(--groupC)}.group-badge.d{background:var(--green)}
 .group-text{font-size:12px;color:var(--text3);font-weight:600}
 .group-line{flex:1;height:1px;background:var(--bg4)}
 
 /* EXERCISE CARDS */
 .ex-card{background:var(--bg2);border-radius:var(--radius);margin:6px 16px;overflow:hidden;border:1px solid var(--bg4)}
 .ex-card.ga{border-right:3px solid var(--groupA)}.ex-card.gb{border-right:3px solid var(--groupB)}.ex-card.gc{border-right:3px solid var(--groupC)}
+.ex-card.gx{border-right:3px solid var(--green)}
 .ex-header{padding:14px 16px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
 .ex-num{min-width:26px;height:26px;border-radius:8px;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0}
 .ex-name{flex:1;font-size:14px;font-weight:600;line-height:1.5}
+.ex-variation{display:inline-block;background:rgba(139,156,247,.14);color:var(--accent);font-size:11px;font-weight:700;padding:1px 9px;border-radius:50px;margin-right:6px;vertical-align:middle}
 .ex-chevron{color:var(--text3);font-size:18px;flex-shrink:0}
+.ex-remove{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.ex-remove:active{color:var(--red)}
+.prev-perf-line{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--green);margin-top:3px;font-weight:600;cursor:pointer;background:none;border:none;padding:0;text-align:right}
+.prev-perf-line:active{opacity:.7}
 
 /* SETS */
-.sets-area{padding:0 12px 12px;border-top:1px solid var(--bg4)}
-.sets-header{display:flex;gap:6px;margin:8px 0 2px}
+.sets-area{padding:0 16px 14px;border-top:1px solid var(--bg4)}
+.sets-header{display:flex;gap:4px;margin:10px 0 2px}
 .sets-header-label{font-size:10px;color:var(--text3);font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.5px}
-.set-row{display:flex;align-items:center;gap:6px;margin-top:6px}
-.set-label{min-width:20px;font-size:12px;color:var(--text3);font-weight:600;text-align:center}
-.set-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:9px;padding:8px 8px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
+.set-row{display:flex;align-items:center;gap:4px;margin-top:8px}
+.set-label{min-width:28px;font-size:12px;color:var(--text3);font-weight:600;text-align:center}
+.set-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;text-align:center;outline:none;-webkit-appearance:none;transition:.15s}
 .set-input:focus{border-color:var(--accent)}
-.set-notes-row{display:flex;margin-top:4px;padding-right:26px;padding-left:30px;gap:6px}
-.set-notes{flex:1;min-width:0;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:6px 9px;color:var(--text2);font-size:12px;outline:none;transition:.15s}
+.set-notes-row{display:flex;margin-top:4px;padding-right:32px;padding-left:34px;gap:4px}
+.set-notes{flex:1;min-width:0;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:6px 10px;color:var(--text2);font-size:12px;outline:none;transition:.15s}
 .set-notes:focus{border-color:var(--accent);color:var(--text)}
 .set-notes::placeholder{color:var(--text3)}
-.set-del{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:4px;width:24px;flex-shrink:0;transition:.15s}
+.set-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:6px;width:30px;transition:.15s}
 .set-del:active{color:var(--red)}
 .add-set-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;margin-top:10px;background:var(--bg3);border:1px dashed var(--bg4);border-radius:10px;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
 .add-set-btn:active{background:var(--bg4);border-color:var(--accent)}
+.add-ex-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin:14px 16px 0;width:calc(100% - 32px);padding:12px;background:rgba(74,222,128,.07);border:1px dashed rgba(74,222,128,.4);border-radius:var(--radius);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.add-ex-btn:active{background:rgba(74,222,128,.15)}
 
 /* SAVE BAR */
 .save-bar{position:fixed;bottom:60px;left:0;right:0;padding:10px 16px;z-index:99}
@@ -133,10 +146,6 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 .save-status{font-size:13px;font-weight:700;white-space:nowrap}
 
 /* CARDIO */
-.cardio-toggle{display:flex;margin:16px 16px 0;border-radius:50px;overflow:hidden;background:var(--bg3);border:1px solid var(--bg4)}
-.cardio-toggle-btn{flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:.15s;letter-spacing:1px}
-.cardio-toggle-btn.active{background:var(--accent2);color:#fff}
-.cardio-time-row{display:flex;gap:10px;padding:0 16px;margin-top:14px}
 .cardio-time-box{flex:1;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);padding:12px;text-align:center}
 .cardio-time-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .cardio-time-input{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px;color:var(--text);font-size:16px;text-align:center;outline:none;-webkit-appearance:none}
@@ -149,21 +158,66 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 .cardio-notes-input:focus{border-color:var(--accent)}
 .cardio-notes-input::placeholder{color:var(--text3)}
 
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(8,10,25,.75);z-index:250;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:500px){.modal-overlay{align-items:center;padding:20px}}
+.modal{background:var(--bg2);border:1px solid var(--bg4);border-radius:20px 20px 0 0;max-width:500px;width:100%;max-height:80vh;overflow-y:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom));animation:slideUp .2s ease}
+@media(min-width:500px){.modal{border-radius:20px}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.modal-close{background:var(--bg3);border:none;color:var(--text2);font-size:15px;cursor:pointer;width:32px;height:32px;border-radius:50%;flex-shrink:0}
+.perf-entry{background:var(--bg3);border:1px solid var(--bg4);border-radius:12px;padding:12px 14px;margin-top:10px}
+.perf-entry-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--accent);font-weight:700}
+.perf-entry-meta{font-size:11px;color:var(--text3)}
+.perf-set{display:flex;gap:8px;font-size:13px;margin-top:6px;align-items:baseline;flex-wrap:wrap}
+.perf-set-num{min-width:22px;font-size:11px;color:var(--text3);font-weight:700}
+.perf-set-note{font-size:11px;color:var(--text3);font-style:italic}
+.lib-search{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;margin:10px 0 6px}
+.lib-search:focus{border-color:var(--accent)}
+.lib-row{display:flex;align-items:center;gap:8px;padding:11px 4px;border-bottom:1px solid var(--bg4);cursor:pointer}
+.lib-row:active{background:var(--bg3)}
+.lib-row-name{flex:1;font-size:14px;font-weight:600}
+.badge-mini{font-size:10px;font-weight:700;padding:2px 9px;border-radius:50px;background:var(--bg4);color:var(--text2);white-space:nowrap}
+.badge-mini.time{color:var(--yellow)}
+.badge-mini.kg{color:var(--accent)}
+.badge-mini.loadtxt{color:var(--orange)}
+.seg-toggle{display:flex;border-radius:10px;overflow:hidden;background:var(--bg3);border:1px solid var(--bg4);margin-top:6px}
+.seg-btn{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:.15s}
+.seg-btn.active{background:var(--accent2);color:#fff}
+.modal-primary{width:100%;padding:12px;margin-top:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer}
+.modal-primary:disabled{opacity:.4}
+.modal-section-label{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:16px}
+
 /* HISTORY */
 .hist-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin:8px 16px;border:1px solid var(--bg4);position:relative}
 .hist-date{font-size:13px;color:var(--accent);font-weight:600}
 .hist-info{font-size:14px;font-weight:600;margin-top:4px}
 .hist-detail{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
 .hist-note{font-style:italic;color:var(--text3);font-size:11px}
-.hist-del{position:absolute;top:12px;left:12px;background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px}
-.hist-del:active{color:var(--red)}
-
-/* PEAK */
 .peak-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:50px;margin-right:8px;letter-spacing:1px}
+.active-badge{display:inline-block;background:rgba(251,191,36,.15);color:var(--yellow);font-size:10px;font-weight:800;padding:2px 9px;border-radius:50px;margin-right:6px}
+.reopen-btn{background:rgba(139,156,247,.12);border:1px solid rgba(139,156,247,.4);color:var(--accent);font-size:11px;font-weight:700;padding:5px 12px;border-radius:50px;cursor:pointer;margin-top:8px}
+.reopen-btn:active{background:rgba(139,156,247,.22)}
 
-/* RIR INPUT — compact */
-.rir-badge{display:inline-block;background:rgba(139,156,247,.15);color:var(--accent);font-size:10px;font-weight:700;padding:2px 8px;border-radius:50px;margin-right:6px}
-.ex-meta{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4}
+.hist-cycle-group{margin:8px 16px}
+.hist-cycle-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);cursor:pointer;transition:.15s}
+.hist-cycle-header:active{background:var(--bg3)}
+.hist-cycle-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
+.hist-cycle-title{font-size:14px;font-weight:700;color:var(--accent)}
+.hist-cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.hist-cycle-chevron{color:var(--text3);font-size:14px;transition:.2s}
+.hist-cycle-body{background:var(--bg2);border:1px solid var(--bg4);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);overflow:hidden}
+.hist-week-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;border-top:1px solid var(--bg4)}
+.hist-week-header:first-child{border-top:none}
+.hist-week-header:active{background:var(--bg3)}
+.hist-week-title{font-size:12px;font-weight:700;color:var(--text2)}
+.hist-week-count{font-size:11px;color:var(--text3)}
+.hist-log-item{padding:12px 14px;border-top:1px solid rgba(255,255,255,.04)}
+.hist-log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.hist-log-type{font-size:12px;font-weight:700;color:var(--text)}
+.hist-log-date{font-size:11px;color:var(--text3)}
+.hist-log-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 6px}
+.hist-log-del:active{color:var(--red)}
 
 /* ADMIN */
 .admin-section{padding:16px}
@@ -177,7 +231,6 @@ input,button,select,textarea{font-family:inherit;font-size:inherit}
 input[type="file"]{display:none}
 .upload-submit{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;padding:12px 24px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px}
 .upload-submit:disabled{opacity:.4;cursor:not-allowed}
-
 .user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bg4)}
 .user-row:last-child{border-bottom:none}
 .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--bg4)}
@@ -187,42 +240,14 @@ input[type="file"]{display:none}
 .user-badge{font-size:10px;padding:3px 10px;border-radius:50px;font-weight:700}
 .user-badge.admin{background:rgba(139,156,247,.15);color:var(--accent)}
 .user-badge.trainee{background:rgba(74,222,128,.1);color:var(--green)}
-
-/* MISC */
-.empty{text-align:center;padding:60px 20px;color:var(--text3)}
-.empty-icon{font-size:48px;margin-bottom:12px}
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:10px 24px;border-radius:50px;font-size:14px;font-weight:600;z-index:200;animation:fadeInOut 2.5s ease;pointer-events:none;white-space:nowrap}
-.toast.error{background:var(--red)}
-@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
-
-.danger-btn{background:none;border:1px solid var(--red);color:var(--red);padding:10px 20px;border-radius:50px;font-size:13px;font-weight:600;cursor:pointer;margin:12px 16px}
-.danger-btn:active{background:rgba(248,113,113,.1)}
-
-.storage-info{padding:12px 16px;margin:8px 16px;background:var(--bg3);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6}
-.storage-info strong{color:var(--text)}
-
-.cycle-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin:8px 16px;border:1px solid var(--bg4);display:flex;align-items:center;justify-content:space-between}
-.cycle-card .cycle-name{font-size:15px;font-weight:700}
-.cycle-card .cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
-.cycle-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:8px}
-.cycle-del:active{color:var(--red)}
-
-.saving-overlay{position:fixed;inset:0;background:rgba(13,16,37,.8);display:flex;align-items:center;justify-content:center;z-index:300;flex-direction:column;gap:16px}
-
-/* CYCLE EDITOR */
-.editor-week{margin:12px 16px}
-.editor-week-title{font-size:14px;font-weight:700;padding:10px 0;color:var(--accent);display:flex;align-items:center;gap:8px;cursor:pointer}
-.editor-type{margin:6px 0;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--bg4);overflow:hidden}
-.editor-type-header{padding:10px 14px;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;background:var(--bg3)}
-.editor-ex{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--bg4)}
-.editor-ex-input{flex:1;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none}
-.editor-ex-input:focus{border-color:var(--accent)}
-.editor-ex-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 6px}
-.editor-ex-del:active{color:var(--red)}
-.editor-add{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-top:1px solid var(--bg4);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;background:none;border-bottom:none;border-left:none;border-right:none;width:100%}
-.editor-add:active{background:var(--bg3)}
-.editor-save{margin:12px 16px;width:calc(100% - 32px);padding:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px}
-.editor-save:active{transform:scale(.97)}
+.admin-collapse-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0}
+.admin-collapse-header h3{margin-bottom:0}
+.user-search{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;margin:10px 0 4px}
+.user-search:focus{border-color:var(--accent)}
+.lib-edit-row{display:flex;flex-direction:column;gap:6px;padding:10px 4px;border-bottom:1px solid var(--bg4)}
+.lib-edit-inputs{display:flex;gap:6px;align-items:center}
+.lib-edit-name{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--bg4);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none}
+.lib-edit-name:focus{border-color:var(--accent)}
 
 /* DASHBOARD */
 .dash-user-card{background:var(--bg2);border-radius:var(--radius);padding:12px 16px;margin:6px 16px;border:1px solid var(--bg4);display:flex;align-items:center;gap:12px;cursor:pointer}
@@ -232,44 +257,34 @@ input[type="file"]{display:none}
 .dash-user-name{font-size:14px;font-weight:600}
 .dash-user-meta{font-size:11px;color:var(--text3);margin-top:2px}
 .dash-user-count{font-size:12px;color:var(--accent);font-weight:700}
-.dash-filter{display:flex;gap:8px;padding:0 16px;margin:8px 0;flex-wrap:wrap}
-.dash-filter .chip{padding:6px 14px;font-size:12px}
 
-/* CHIP HIERARCHY */
-.chip.current{border-color:var(--accent);background:rgba(139,156,247,.18);color:var(--accentBright);font-size:15px;padding:11px 20px}
-.chip.prev{border-color:var(--bg4);background:var(--bg3);color:var(--text2);opacity:.75}
-.chip.old{border-color:transparent;background:var(--bg2);color:var(--text3);font-size:13px;padding:7px 14px}
-.show-more-btn{background:none;border:1px dashed var(--bg4);border-radius:50px;color:var(--text3);font-size:12px;font-weight:600;padding:7px 16px;cursor:pointer;margin:4px 0}
-.show-more-btn:active{background:var(--bg3)}
+/* CYCLE EDITOR */
+.editor-week{margin:12px 16px}
+.editor-week-title{font-size:14px;font-weight:700;padding:10px 0;color:var(--accent);display:flex;align-items:center;gap:8px;cursor:pointer}
+.editor-type{margin:6px 0;background:var(--bg2);border-radius:var(--radius);border:1px solid var(--bg4);overflow:hidden}
+.editor-type-header{padding:10px 14px;font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;background:var(--bg3)}
+.editor-ex{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--bg4)}
+.editor-ex-input{flex:1;min-width:0;background:var(--bg3);border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;outline:none}
+.editor-ex-input:focus{border-color:var(--accent)}
+.editor-ex-del{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px 6px}
+.editor-ex-del:active{color:var(--red)}
+.editor-save{margin:12px 16px;width:calc(100% - 32px);padding:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.editor-save:active{transform:scale(.97)}
 
-/* COLLAPSIBLE HISTORY */
-.hist-cycle-group{margin:8px 16px}
-.hist-cycle-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);cursor:pointer;transition:.15s}
-.hist-cycle-header:active{background:var(--bg3)}
-.hist-cycle-header.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
-.hist-cycle-title{font-size:14px;font-weight:700;color:var(--accent)}
-.hist-cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
-.hist-cycle-chevron{color:var(--text3);font-size:14px;transition:.2s}
-.hist-cycle-body{background:var(--bg2);border:1px solid var(--bg4);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);overflow:hidden}
-
-.hist-week-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;border-top:1px solid var(--bg4)}
-.hist-week-header:first-child{border-top:none}
-.hist-week-header:active{background:var(--bg3)}
-.hist-week-title{font-size:12px;font-weight:700;color:var(--text2)}
-.hist-week-count{font-size:11px;color:var(--text3)}
-
-.hist-log-item{padding:12px 14px;border-top:1px solid rgba(255,255,255,.04)}
-.hist-log-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.hist-log-type{font-size:12px;font-weight:700;color:var(--text)}
-.hist-log-date{font-size:11px;color:var(--text3)}
-.hist-log-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:2px 6px}
-.hist-log-del:active{color:var(--red)}
-
-/* COLLAPSIBLE ADMIN */
-.admin-collapse-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0}
-.admin-collapse-header h3{margin-bottom:0}
-.user-search{width:100%;background:var(--bg3);border:1px solid var(--bg4);border-radius:10px;padding:9px 12px;color:var(--text);font-size:14px;outline:none;margin:10px 0 4px}
-.user-search:focus{border-color:var(--accent)}
+/* MISC */
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--green);color:var(--bg);padding:10px 24px;border-radius:50px;font-size:14px;font-weight:600;z-index:300;animation:fadeInOut 2.5s ease;pointer-events:none;white-space:nowrap}
+.toast.error{background:var(--red)}
+@keyframes fadeInOut{0%{opacity:0;transform:translateX(-50%) translateY(-10px)}15%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+.storage-info{padding:12px 16px;margin:8px 16px;background:var(--bg3);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6}
+.storage-info strong{color:var(--text)}
+.cycle-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin:8px 16px;border:1px solid var(--bg4);display:flex;align-items:center;justify-content:space-between}
+.cycle-card .cycle-name{font-size:15px;font-weight:700}
+.cycle-card .cycle-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.cycle-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:8px}
+.cycle-del:active{color:var(--red)}
+.saving-overlay{position:fixed;inset:0;background:rgba(13,16,37,.8);display:flex;align-items:center;justify-content:center;z-index:300;flex-direction:column;gap:16px}
 </style>
 </head>
 <body>
@@ -287,14 +302,13 @@ firebase.initializeApp({
   messagingSenderId: "433946517731",
   appId: "1:433946517731:web:e3d77ed45f3d289d93a5d6"
 });
-  firebase.appCheck().activate(
+firebase.appCheck().activate(
   new firebase.appCheck.ReCaptchaEnterpriseProvider('6LdBld4sAAAAANusJb2FSMuyo6DbRpkC7t-OaLcM'),
   true
 );
 var auth = firebase.auth();
 var db = firebase.firestore();
 
-// Admin emails
 var ADMIN_EMAILS = ["rangebyomer@gmail.com","inbaltsa@gmail.com","omertzurrhcp@gmail.com"];
 function isAdmin(email) {
   return ADMIN_EMAILS.indexOf((email||"").toLowerCase()) >= 0;
@@ -304,245 +318,234 @@ function isAdmin(email) {
 // DB HELPERS
 // =====================================================
 var DB = {
-  // CYCLES
-  saveCycle: function(cycleData) {
-    return db.collection("cycles").doc(cycleData.id).set(cycleData);
-  },
+  saveCycle: function(c) { return db.collection("cycles").doc(c.id).set(c); },
   loadCycles: function() {
     return db.collection("cycles").orderBy("number","desc").get().then(function(snap) {
       return snap.docs.map(function(d) { return d.data(); });
     });
   },
-  deleteCycle: function(id) {
-    return db.collection("cycles").doc(id).delete();
-  },
-  // LOGS
-  saveLog: function(uid, log) {
-    return db.collection("users").doc(uid).collection("logs").doc(log.id).set(log);
-  },
+  deleteCycle: function(id) { return db.collection("cycles").doc(id).delete(); },
+
+  saveLog: function(uid, log) { return db.collection("users").doc(uid).collection("logs").doc(log.id).set(log); },
   loadLogs: function(uid) {
-    return db.collection("users").doc(uid).collection("logs").orderBy("date","desc").limit(100).get().then(function(snap) {
+    return db.collection("users").doc(uid).collection("logs").orderBy("date","desc").limit(150).get().then(function(snap) {
       return snap.docs.map(function(d) { return d.data(); });
     });
   },
-  deleteLog: function(uid, logId) {
-    return db.collection("users").doc(uid).collection("logs").doc(logId).delete();
-  },
-  // USER PROFILE
-  saveUser: function(uid, data) {
-    return db.collection("users").doc(uid).set(data, {merge:true});
-  },
+  deleteLog: function(uid, logId) { return db.collection("users").doc(uid).collection("logs").doc(logId).delete(); },
+
+  saveUser: function(uid, data) { return db.collection("users").doc(uid).set(data, {merge:true}); },
   loadUsers: function() {
     return db.collection("users").get().then(function(snap) {
       return snap.docs.map(function(d) { return Object.assign({uid:d.id}, d.data()); });
     });
   },
-  // ADMIN: load any user's logs
   loadUserLogs: function(uid) {
     return db.collection("users").doc(uid).collection("logs").orderBy("date","desc").limit(200).get().then(function(snap) {
       return snap.docs.map(function(d) { return d.data(); });
     });
-  }
+  },
+
+  // EXERCISE LIBRARY
+  saveExercise: function(ex) { return db.collection("exercises").doc(ex.id).set(ex); },
+  loadExercises: function() {
+    return db.collection("exercises").get().then(function(snap) {
+      return snap.docs.map(function(d) { return d.data(); });
+    });
+  },
+  deleteExercise: function(id) { return db.collection("exercises").doc(id).delete(); }
 };
 </script>
 
 <script>
 // =====================================================
-// XLSX PARSER v2 — NEW FORMAT (Cycle #5+)
-// Sheet names: "1","2","3","4","5" = weeks 1-5
-// Each sheet has 3 workouts (אימון 1/2/3)
-// Columns: D=code, E=name, F=reps, G=sets, H=RIR, I=variant
-// Cardio/AMRAP = TABATA🚀 or AMRAP🚀 section at end of each workout
-// Sheet 5 = PEAK week
+// SHARED HELPERS (names, formatting)
 // =====================================================
-
-// Resolve a cell to the value the coach actually intended.
-// Problem: Excel converts hyphen ranges typed into non-text cells (e.g. a coach
-// typing "2-3" for sets or RIR) into real DATES. Depending on read options the
-// raw value (rawV) then comes through as either a Date object or an Excel serial
-// number (~40000-60000), while the DISPLAYED text (dispW, the cell's .w) still
-// shows the intended "2-3" (or "2-3" rendered via a d-m format).
-// Strategy:
-//   - If rawV looks like a corrupted date (Date object, or serial > 40000), trust
-//     the displayed text dispW instead — that's the coach's real value.
-//   - The d-m number format renders 2026-03-02 as "2-3", which is exactly the
-//     range the coach meant, so dispW is correct as-is.
-//   - Otherwise return the raw value as a trimmed string.
-// Returns "" when there's genuinely nothing usable.
-function cellText(rawV, dispW) {
-  if (rawV === null || rawV === undefined || rawV === "") {
-    return dispW != null ? String(dispW).trim() : "";
-  }
-  var looksLikeDate =
-    (typeof rawV === "object" && rawV instanceof Date) ||
-    (typeof rawV === "number" && rawV > 40000 && rawV < 60000);
-  if (looksLikeDate) {
-    // Prefer the displayed text; it holds the coach's intended "2-3"-style value.
-    if (dispW != null && String(dispW).trim() !== "") return String(dispW).trim();
-    return ""; // date with no usable display text -> treat as empty, never emit a date
-  }
-  return String(rawV).trim();
+function normExName(name) {
+  return String(name || "")
+    .replace(/[\u200e\u200f\u202a-\u202e]/g, "")
+    .replace(/[()[\]'".,/\\\-\u2013\u2014:|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+function libIdFor(name) {
+  return "ex_" + normExName(name).replace(/\s+/g, "_");
+}
+function exGroupOf(groupOrCode) {
+  var s = String(groupOrCode || "").trim().toLowerCase();
+  return s ? s[0] : "";
 }
 
-function parseWaveXlsx(file) {
+// =====================================================
+// XLSX PARSER v3 — new template format
+// Sheets named "1","2"... = weeks. Cycle title in B2 of sheet "1" (must contain #N).
+// Columns: B=code, C=main name, D=variation, E=measure(חזרות/זמן),
+//          F=weight(כן/עומס/לא), G=target, H=sets, I=RIR, J=coach notes
+// Workout block starts with a merged title row "אימון X — ..." in col B.
+// Cardio: merged row "AMRAP 🚀 | עבודה X · מנוחה Y" then numbered rows (B=num, C=name).
+// =====================================================
+var MONTH_NUM = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function fixDateArtifact(s) {
+  var t = String(s == null ? "" : s).trim();
+  var m = t.match(/^(\d{1,2})[-\/]([A-Za-z]{3})$/);
+  if (m && MONTH_NUM[m[2].toLowerCase()]) return m[1] + "-" + MONTH_NUM[m[2].toLowerCase()];
+  m = t.match(/^([A-Za-z]{3})[-\/](\d{1,2})$/);
+  if (m && MONTH_NUM[m[1].toLowerCase()]) return MONTH_NUM[m[1].toLowerCase()] + "-" + m[2];
+  return t;
+}
+function cellText(ws, addr) {
+  var c = ws[addr];
+  if (!c) return "";
+  // .w = display text — recovers "2-3" style values Excel converted to dates
+  var raw = (c.w != null && c.w !== "") ? c.w : c.v;
+  return fixDateArtifact(raw == null ? "" : raw);
+}
+
+function parseWorkbookV2(wb) {
+  var sheet1 = wb.Sheets["1"] || wb.Sheets[wb.SheetNames.filter(function(n){return !isNaN(parseInt(n));})[0]];
+  if (!sheet1) throw new Error("לא נמצאו גיליונות שבועות (1,2,3...)");
+  var cycleTitle = cellText(sheet1, "B2") || cellText(sheet1, "C2");
+  var numMatch = cycleTitle.match(/#(\d+)/);
+  if (!numMatch) throw new Error("לא נמצא מספר סייקל (#N) בתא B2 של גיליון 1");
+  var cycleNum = parseInt(numMatch[1]);
+
+  var weekSheetNames = wb.SheetNames.filter(function(n){ return !isNaN(parseInt(n)); });
+  var weeks = [];
+
+  weekSheetNames.forEach(function(name) {
+    var weekNum = parseInt(name);
+    var ws = wb.Sheets[name];
+    var range = XLSX.utils.decode_range(ws['!ref'] || "A1:K60");
+    var maxRow = range.e.r + 1;
+
+    var trainings = {};
+    var curT = null;
+    var inCardio = false;
+
+    for (var r = 1; r <= maxRow; r++) {
+      var B = cellText(ws, "B" + r);
+      var C = cellText(ws, "C" + r);
+
+      var wMatch = B.match(/^אימון\s*(\d+)/);
+      if (wMatch) {
+        curT = parseInt(wMatch[1]);
+        inCardio = false;
+        trainings[curT] = { title: B, exercises: [], cardio: null };
+        continue;
+      }
+      if (!curT) continue;
+
+      var cMatch = B.match(/(AMRAP|TABATA)/i);
+      if (cMatch && B.indexOf("\uD83D\uDE80") >= 0) {
+        inCardio = true;
+        var work = "", rest = "";
+        var tm = B.match(/עבודה\s*([\d:.,]+)/); if (tm) work = tm[1];
+        tm = B.match(/מנוחה\s*([\d:.,]+)/); if (tm) rest = tm[1];
+        trainings[curT].cardio = { type: cMatch[1].toLowerCase(), work: work, rest: rest, exercises: [] };
+        continue;
+      }
+
+      if (inCardio) {
+        if (trainings[curT].cardio && C && /^\d+$/.test(B)) {
+          trainings[curT].cardio.exercises.push(C);
+        } else if (B && !C && !/^\d+$/.test(B)) {
+          inCardio = false; // fell out of cardio block
+        }
+        continue;
+      }
+
+      if (B === "קוד") continue; // header row
+
+      var codeMatch = B.match(/^([A-Z])(\d+)$/);
+      if (codeMatch && C) {
+        var E = cellText(ws, "E" + r);
+        var F = cellText(ws, "F" + r);
+        trainings[curT].exercises.push({
+          code: B,
+          group: codeMatch[1].toLowerCase(),
+          name: C,
+          variation: cellText(ws, "D" + r),
+          measure: E.indexOf("זמן") >= 0 ? "time" : "reps",
+          load: F.indexOf("עומס") >= 0 ? "text" : (F.indexOf("כן") >= 0 ? "kg" : "none"),
+          target: cellText(ws, "G" + r),
+          sets: cellText(ws, "H" + r),
+          rir: cellText(ws, "I" + r),
+          notes: cellText(ws, "J" + r)
+        });
+      }
+    }
+
+    weeks.push({ weekNum: weekNum, trainings: trainings, peak: false });
+  });
+
+  weeks.sort(function(a,b){ return a.weekNum - b.weekNum; });
+  if (weeks.length) weeks[weeks.length - 1].peak = true;
+
+  var totalEx = 0;
+  weeks.forEach(function(w) {
+    Object.keys(w.trainings).forEach(function(k) { totalEx += w.trainings[k].exercises.length; });
+  });
+  if (!totalEx) throw new Error("הקובץ נקרא אבל לא נמצאו תרגילים — בדקו שהמבנה תואם לתבנית");
+
+  return {
+    id: "cycle_" + cycleNum,
+    number: cycleNum,
+    name: cycleTitle,
+    format: 2,
+    weeks: weeks,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function parseCycleXlsx(file) {
   return new Promise(function(resolve, reject) {
     var reader = new FileReader();
     reader.onload = function(e) {
       try {
-        // cellNF + cellText ensure each cell's formatted .w is computed, so
-        // cellText() can recover hyphen-ranges Excel mangled into dates (e.g. "2-3").
         var wb = XLSX.read(e.target.result, {type:"array", cellNF:true, cellText:true});
-
-        // Extract cycle name/number from cell B2 of sheet 1
-        var firstSheet = wb.Sheets[wb.SheetNames[0]];
-        var titleCell = firstSheet ? (firstSheet["B2"] || firstSheet["C2"] || firstSheet["B1"]) : null;
-        var cycleTitle = titleCell ? String(titleCell.v || "").trim() : "";
-        var cycleNumMatch = cycleTitle.match(/#(\d+)/);
-        var cycleNum = cycleNumMatch ? parseInt(cycleNumMatch[1]) : Date.now();
-        var cycleName = cycleTitle || "Cycle " + cycleNum;
-
-        // All sheets are week sheets (named "1","2","3","4","5" etc)
-        var weeks = [];
-        wb.SheetNames.forEach(function(name) {
-          var weekNum = parseInt(name);
-          if (isNaN(weekNum)) return;
-          var ws = wb.Sheets[name];
-          var range = XLSX.utils.decode_range(ws['!ref'] || "A1:M50");
-          var maxRow = range.e.r + 1;
-
-          // Collect all rows as arrays. We keep BOTH the raw value (.v) and the
-          // formatted/displayed text (.w). Excel turns hyphen ranges like "2-3"
-          // typed into non-text cells into real dates (serial ~46083), so .v is
-          // useless there but .w still shows "2-3". cellText() below prefers the
-          // human-displayed value precisely to recover those corrupted cells.
-          var rows = [];
-          for (var r = 1; r <= maxRow; r++) {
-            var row = [];
-            for (var c = 0; c <= 12; c++) {
-              var cell = ws[XLSX.utils.encode_cell({r:r-1, c:c})];
-              row.push(cell ? cell.v : null);   // raw value (back-compat with existing code)
-            }
-            rows.push(row);
-          }
-
-          // Parallel grid of displayed text (.w) for the same cells.
-          var rowsW = [];
-          for (var r2 = 1; r2 <= maxRow; r2++) {
-            var roww = [];
-            for (var c2 = 0; c2 <= 12; c2++) {
-              var cellw = ws[XLSX.utils.encode_cell({r:r2-1, c:c2})];
-              roww.push(cellw && cellw.w != null ? cellw.w : null);
-            }
-            rowsW.push(roww);
-          }
-
-          // Peak = last sheet OR if title cell contains "פיק"
-          var isPeak = (weekNum === wb.SheetNames.filter(function(n){return !isNaN(parseInt(n));}).length);
-
-          // Parse workouts from the sheet
-          // Structure: row with "אימון X" in col C starts a new workout block
-          // Then header row, then exercises (col D=code, col E=name, col F=reps, col G=sets, col H=RIR, col I=variant)
-          // TABATA🚀 or AMRAP🚀 in col D signals cardio section
-          var trainings = {}; // {1: {exercises:[], cardio:[], cardioType:""}, 2:..., 3:...}
-          var curTraining = null;
-          var inCardio = false;
-
-          rows.forEach(function(row, rowIdx) {
-            var roww = rowsW[rowIdx] || [];
-            var colC = row[2] ? String(row[2]).trim() : "";
-            var colD = row[3] ? String(row[3]).trim() : "";
-            var colE = row[4] ? String(row[4]).trim() : "";
-
-            // Detect workout header "אימון X"
-            var wMatch = colC.match(/אימון\s*(\d+)/);
-            if (wMatch) {
-              curTraining = parseInt(wMatch[1]);
-              inCardio = false;
-              if (!trainings[curTraining]) trainings[curTraining] = {exercises:[], cardio:[], cardioType:"tabata"};
-              return;
-            }
-
-            if (!curTraining) return;
-
-            // Detect cardio/AMRAP section
-            if (colD.match(/TABATA|AMRAP/i) && colD.match(/🚀/)) {
-              inCardio = true;
-              trainings[curTraining].cardioType = colD.match(/AMRAP/i) ? "amrap" : "tabata";
-              return;
-            }
-
-            if (inCardio) {
-              // Cardio exercise rows — text in col D, no code pattern
-              if (colD && !colD.match(/^[A-C]\d$/) && colD.length > 2 && !colD.match(/תרגיל|חזרות|הוראות/)) {
-                trainings[curTraining].cardio.push(colD);
-              }
-              return;
-            }
-
-            // Skip header rows
-            if (colD === "תרגיל" || colE === "תרגיל" || colC.match(/הוראות|מס'/)) return;
-
-            // Exercise row: col D has code like A1/A2/B1/B2/C1/C2/C3/C4
-            var codeMatch = colD.match(/^([A-C])(\d+)$/);
-            if (codeMatch && colE) {
-              // cellText recovers ranges like "2-3" that Excel corrupted into dates.
-              var reps = cellText(row[5], roww[5]);
-              var sets = cellText(row[6], roww[6]);
-              var rir = cellText(row[7], roww[7]);
-              var variant = cellText(row[8], roww[8]);
-              trainings[curTraining].exercises.push({
-                code: colD,
-                group: codeMatch[1].toLowerCase(),
-                name: colE.replace(/\n/g," ").trim(),
-                reps: reps,
-                sets: sets,
-                rir: rir,
-                variant: variant
-              });
-            } else if (!codeMatch && colD && colE && row[5]) {
-              // Continuation row for A1/B1 (e.g. second set spec like "70% 5RM")
-              // Attach to last exercise
-              var last = trainings[curTraining].exercises[trainings[curTraining].exercises.length - 1];
-              if (last) {
-                var reps2 = cellText(row[5], roww[5]);
-                var sets2 = cellText(row[6], roww[6]);
-                var rir2 = cellText(row[7], roww[7]);
-                var variant2 = cellText(row[8], roww[8]);
-                if (!last.extraSets) last.extraSets = [];
-                last.extraSets.push({
-                  reps: reps2,
-                  sets: sets2,
-                  rir: rir2,
-                  variant: variant2
-                });
-              }
-            }
-          });
-
-          weeks.push({
-            weekNum: weekNum,
-            peak: isPeak,
-            trainings: trainings // {1:{exercises,cardio,cardioType}, 2:..., 3:...}
-          });
-        });
-
-        weeks.sort(function(a,b){return a.weekNum-b.weekNum;});
-
-        var cycleId = "cycle_" + cycleNum;
-        resolve({
-          id: cycleId,
-          number: cycleNum,
-          name: cycleName,
-          weeks: weeks,
-          createdAt: new Date().toISOString()
-        });
-      } catch(err) {
-        reject(err);
-      }
+        resolve(parseWorkbookV2(wb));
+      } catch(err) { reject(err); }
     };
     reader.onerror = function() { reject(new Error("Failed to read file")); };
     reader.readAsArrayBuffer(file);
   });
+}
+
+// =====================================================
+// OLD FORMAT NORMALIZER — maps pre-v2 cycles to the new shape
+// so the whole app renders one format. Defaults: reps + kg.
+// =====================================================
+function normalizeCycle(c) {
+  if (!c || c.format === 2) return c;
+  var weeks = (c.weeks || []).map(function(w) {
+    var trainings = {};
+    Object.keys(w.trainings || {}).forEach(function(k) {
+      var t = w.trainings[k] || {};
+      trainings[k] = {
+        title: "",
+        exercises: (t.exercises || []).map(function(ex) {
+          return {
+            code: ex.code || "",
+            group: ex.group || (ex.code ? String(ex.code)[0].toLowerCase() : ""),
+            name: ex.name || "",
+            variation: ex.variant || "",
+            measure: "reps",
+            load: "kg",
+            target: ex.reps || "",
+            sets: ex.sets || "",
+            rir: ex.rir || "",
+            notes: ""
+          };
+        }),
+        cardio: (t.cardio && t.cardio.length) ? {
+          type: t.cardioType || "tabata", work: "", rest: "", exercises: t.cardio
+        } : null
+      };
+    });
+    return { weekNum: w.weekNum, peak: !!w.peak, trainings: trainings };
+  });
+  return { id: c.id, number: c.number, name: c.name, format: 2, weeks: weeks, createdAt: c.createdAt || new Date().toISOString() };
 }
 </script>
 
@@ -551,162 +554,143 @@ function parseWaveXlsx(file) {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 
 <script type="text/babel">
-
 function GoogleLogo() {
   return <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>;
 }
 
-// Normalize an exercise name so the same movement (squat / deadlift / etc.)
-// matches across cycles and weeks even with minor spacing/punctuation differences.
-function normExName(name) {
-  return String(name || "")
-    .replace(/[\u200e\u200f\u202a-\u202e]/g, "") // strip LTR/RTL marks
-    .replace(/[()[\]'".,/\\\-–—:|]/g, " ")        // punctuation -> space
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-// Base-movement keyword = first word of the normalized name.
-// "סקוואט טמפו 3 שנ ירידה" -> "סקוואט". A squat is always a squat.
-function exKeyword(name) {
-  var n = normExName(name);
-  if (!n) return "";
-  var words = n.split(" ").filter(Boolean);
-  return words[0] || "";
-}
-// Superset block letter from a group ("a") or a code ("A1") -> "a".
-function exGroupOf(groupOrCode) {
-  var s = String(groupOrCode || "").trim().toLowerCase();
-  return s ? s[0] : "";
-}
-
-// Translate the coach's shorthand in the reps/spec field into readable Hebrew:
-//   *  marks repetitions   ("*5-8"  -> "5-8 חזרות")
-//   '  marks seconds       ("30'"   -> "30 שניות",  "0:45'" -> "0:45 שניות")
-// A value with neither symbol is shown as-is. The * / ' may sit before or after
-// the number. Note: this only formats the spec line; it never touches an
-// exercise NAME (e.g. "טמפו 3 שנ' ירידה" stays exactly as written).
-function describeSpec(spec) {
-  var r = String(spec == null ? "" : spec).trim();
-  if (!r) return "";
-  if (r.indexOf("*") >= 0) {
-    var reps = r.replace(/\*/g, "").trim();
-    return reps ? reps + " חזרות" : "";
+// ---------- set formatting (handles new + legacy log sets) ----------
+function fmtSetStr(s) {
+  var parts = [];
+  if (typeof s.load === "number") parts.push(s.load + "ק״ג");
+  else if (s.load) parts.push(String(s.load));
+  else if (s.weight != null) parts.push(s.weight + "ק״ג");
+  if (s.value != null && s.value !== "") {
+    parts.push(String(s.value).indexOf(":") >= 0 ? "⏱" + s.value : "×" + s.value);
+  } else if (s.reps != null) {
+    parts.push("×" + s.reps);
   }
-  // seconds marker: straight apostrophe ' or Hebrew geresh ׳, attached to a digit
-  if (/[0-9][\s]*['׳]/.test(r) || /['׳][\s]*[0-9]/.test(r)) {
-    var secs = r.replace(/['׳]/g, "").trim();
-    return secs ? secs + " שניות" : "";
-  }
-  return r;
+  return parts.join(" ");
+}
+function setHasData(s) {
+  return (s.load != null && s.load !== "") || (s.value != null && s.value !== "") ||
+         (s.weight != null) || (s.reps != null);
 }
 
-// Find the most recent previous performance of a movement across all logs.
-// Matches by base-movement keyword, scoped to the same superset block (A/B/C):
-// an "A" exercise only looks at past "A" exercises, "B" only at "B", etc.
-// logs are ordered newest-first. excludeId skips the current in-progress session.
-function getLastPerf(ex, logs, excludeId) {
-  if (!ex) return null;
-  var keyword = exKeyword(ex.name);
-  if (!keyword) return null;
-  var grp = exGroupOf(ex.group || ex.code);
-  for (var i = 0; i < (logs || []).length; i++) {
+// ---------- previous performance ----------
+// Match priority: exerciseId → normalized main name → legacy keyword+group.
+function matchLogEntry(ex, entry) {
+  var exId = ex.exerciseId || libIdFor(ex.name);
+  if (entry.exerciseId && entry.exerciseId === exId) return true;
+  var tNorm = normExName(ex.name);
+  var eNorm = normExName(entry.name);
+  if (tNorm && eNorm === tNorm) return true;
+  // legacy fallback: keyword (first word) + same superset block
+  var kw = tNorm.split(" ")[0];
+  if (!kw) return false;
+  var g1 = exGroupOf(ex.group || ex.code), g2 = exGroupOf(entry.group || entry.code);
+  if (g1 && g2 && g1 !== g2) return false;
+  return eNorm.split(" ").indexOf(kw) !== -1;
+}
+function getPerfHistory(ex, logs, excludeId, limit) {
+  var out = [];
+  for (var i = 0; i < (logs || []).length && out.length < (limit || 3); i++) {
     var lg = logs[i];
     if (excludeId && lg.id === excludeId) continue;
-    var match = (lg.exercises || []).find(function(e) {
-      var eGrp = exGroupOf(e.group || e.code);
-      // require same block when both sides know their block (lenient for old logs)
-      if (grp && eGrp && grp !== eGrp) return false;
-      var words = normExName(e.name).split(" ").filter(Boolean);
-      return words.indexOf(keyword) !== -1;
-    });
-    if (match && (match.sets || []).some(function(s) { return s.weight != null || s.reps != null; })) {
-      return { date: lg.date, sets: match.sets, cycleName: lg.cycleName, weekNum: lg.weekNum };
+    var m = (lg.exercises || []).find(function(e) { return matchLogEntry(ex, e); });
+    if (m && (m.sets || []).some(setHasData)) {
+      out.push({ date: lg.date, cycleName: lg.cycleName, weekNum: lg.weekNum, entry: m });
     }
   }
-  return null;
+  return out;
 }
 
+var TN = {training1:"אימון 1", training2:"אימון 2", training3:"אימון 3"};
+var TI = {training1:"🏋️", training2:"💪", training3:"🔥"};
+var GROUP_NAMES = {a:"סופרסט A", b:"סופרסט B", c:"סופרסט C"};
+function emptySet() { return {load:"", value:"", rir:"", variation:"", notes:""}; }
+
 function App() {
-  const [user, setUser] = React.useState(undefined); // undefined=loading, null=logged out
+  const [user, setUser] = React.useState(undefined);
   const [tab, setTab] = React.useState("home");
   const [toast, setToast] = React.useState(null);
   const [cycles, setCycles] = React.useState([]);
   const [logs, setLogs] = React.useState([]);
+  const [lib, setLib] = React.useState([]);
   const [allUsers, setAllUsers] = React.useState([]);
-  
-  // Workout selection state
+
+  // selection
   const [selCycleId, setSelCycleId] = React.useState(null);
   const [selWeek, setSelWeek] = React.useState(null);
   const [selType, setSelType] = React.useState(null);
   const [loc, setLoc] = React.useState("gym");
   const [workoutDate, setWorkoutDate] = React.useState(new Date().toISOString().split("T")[0]);
-  
-  // Exercise state
-  const [curSets, setCurSets] = React.useState({});
-  const [openEx, setOpenEx] = React.useState({});
-  const [cardioMode, setCardioMode] = React.useState("amrap");
-  const [cardioData, setCardioData] = React.useState({workTime:"",restTime:"",notes:""});
 
-  // Live-session / autosave state
+  // live session
+  const [curSets, setCurSets] = React.useState({});     // keyed by "p_i" / "x_i"
+  const [openEx, setOpenEx] = React.useState({});
+  const [extras, setExtras] = React.useState([]);       // exercises added mid-workout
+  const [removed, setRemoved] = React.useState([]);     // plan indices removed this session
+  const [cardioData, setCardioData] = React.useState({workTime:"",restTime:"",notes:""});
   const [sessionLogId, setSessionLogId] = React.useState(null);
-  const [saveStatus, setSaveStatus] = React.useState("idle"); // idle | saving | saved | error
+  const [saveStatus, setSaveStatus] = React.useState("idle");
+  const [hydrateKey, setHydrateKey] = React.useState(0);
   const saveTimer = React.useRef(null);
   const skipSaveRef = React.useRef(false);
-  
-  // Admin state
+
+  // modals
+  const [perfModal, setPerfModal] = React.useState(null);   // exercise object
+  const [addModal, setAddModal] = React.useState(false);
+  const [libSearch, setLibSearch] = React.useState("");
+  const [newEx, setNewEx] = React.useState({name:"", measure:"reps", load:"kg"});
+
+  // admin
   const [uploadFile, setUploadFile] = React.useState(null);
   const [uploading, setUploading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
-
-  // Cycle editor state
-  const [editCycle, setEditCycle] = React.useState(null); // deep copy of cycle being edited
+  const [editCycle, setEditCycle] = React.useState(null);
   const [editOpenWeeks, setEditOpenWeeks] = React.useState({});
+  const [adminCyclesOpen, setAdminCyclesOpen] = React.useState(false);
+  const [adminUsersOpen, setAdminUsersOpen] = React.useState(false);
+  const [adminLibOpen, setAdminLibOpen] = React.useState(false);
+  const [userSearch, setUserSearch] = React.useState("");
+  const [libAdminSearch, setLibAdminSearch] = React.useState("");
+  const [libEditId, setLibEditId] = React.useState(null);
+  const [libEditForm, setLibEditForm] = React.useState({name:"", measure:"reps", load:"kg"});
 
-  // Dashboard state
-  const [dashUser, setDashUser] = React.useState(null); // selected user for viewing
+  // dashboard
+  const [dashUser, setDashUser] = React.useState(null);
   const [dashLogs, setDashLogs] = React.useState([]);
   const [dashLoading, setDashLoading] = React.useState(false);
   const [userLogCounts, setUserLogCounts] = React.useState({});
 
-  // Collapsible UI state
+  // collapsible
   const [showOldCycles, setShowOldCycles] = React.useState(false);
   const [openHistCycles, setOpenHistCycles] = React.useState({});
   const [openHistWeeks, setOpenHistWeeks] = React.useState({});
-  const [adminCyclesOpen, setAdminCyclesOpen] = React.useState(false);
-  const [adminUsersOpen, setAdminUsersOpen] = React.useState(false);
-  const [userSearch, setUserSearch] = React.useState("");
 
-  // Auth listener
+  var admin = user && isAdmin(user.email);
+
   React.useEffect(() => {
     return auth.onAuthStateChanged(function(u) {
       if (u) {
         DB.saveUser(u.uid, {
-          email: u.email,
-          displayName: u.displayName,
-          photoURL: u.photoURL,
+          email: u.email, displayName: u.displayName, photoURL: u.photoURL,
           role: isAdmin(u.email) ? "admin" : "trainee",
           lastLogin: new Date().toISOString()
         });
         setUser(u);
-      } else {
-        setUser(null);
-      }
+      } else setUser(null);
     });
   }, []);
 
-  // Load data when user logs in
   React.useEffect(() => {
     if (!user) return;
-    DB.loadCycles().then(setCycles).catch(console.error);
+    DB.loadCycles().then(cs => setCycles(cs.map(normalizeCycle))).catch(console.error);
     DB.loadLogs(user.uid).then(setLogs).catch(console.error);
-    if (isAdmin(user.email)) {
-      DB.loadUsers().then(setAllUsers).catch(console.error);
-    }
+    DB.loadExercises().then(setLib).catch(console.error);
+    if (isAdmin(user.email)) DB.loadUsers().then(setAllUsers).catch(console.error);
   }, [user]);
 
-  // Auto-select latest cycle
   React.useEffect(() => {
     if (cycles.length && !selCycleId) setSelCycleId(cycles[0].id);
   }, [cycles]);
@@ -723,90 +707,160 @@ function App() {
 
   const cycle = cycles.find(c => c.id === selCycleId);
   const week = cycle ? (cycle.weeks||[]).find(w => w.weekNum === selWeek) : null;
+  const trainingData = (week && selType) ? ((week.trainings||{})[parseInt(selType.replace("training",""))] || null) : null;
+  const planExercises = trainingData ? (trainingData.exercises || []) : [];
+  const cardioPlan = trainingData ? trainingData.cardio : null;
 
-  // Type mapping — training1/2/3 = strength workouts
-  var TN = {training1:"אימון 1",training2:"אימון 2",training3:"אימון 3"};
-  var TI = {training1:"🏋️",training2:"💪",training3:"🔥"};
+  // displayed list: plan (minus removed) + extras, with stable keys
+  const displayList = [];
+  planExercises.forEach((ex, i) => {
+    if (removed.indexOf(i) === -1) displayList.push({ key: "p_"+i, ex: ex, added: false, planIdx: i });
+  });
+  extras.forEach((ex, i) => {
+    displayList.push({ key: "x_"+i, ex: ex, added: true, extraIdx: i });
+  });
 
-  // Get current training data (exercises + cardio)
-  const getTrainingData = () => {
-    if (!week || !selType) return {exercises:[], cardio:[], cardioType:"tabata"};
-    var t = (week.trainings||{})[parseInt(selType.replace("training",""))];
-    return t || {exercises:[], cardio:[], cardioType:"tabata"};
+  // ---------- exercise library ----------
+  const libByNorm = React.useMemo(() => {
+    var m = {};
+    lib.forEach(e => { m[normExName(e.name)] = e; });
+    return m;
+  }, [lib]);
+
+  const ensureLib = (name, measure, load) => {
+    var n = normExName(name);
+    if (!n) return null;
+    if (libByNorm[n]) return libByNorm[n];
+    var entry = { id: libIdFor(name), name: String(name).trim(), measure: measure||"reps", load: load||"kg", createdAt: new Date().toISOString() };
+    setLib(p => p.some(e => e.id === entry.id) ? p : [...p, entry]);
+    DB.saveExercise(entry).catch(console.error);
+    return entry;
   };
-  const trainingData = getTrainingData();
-  const exercises = trainingData.exercises || [];
-  const cardioExercises = trainingData.cardio || [];
-  const weekCardioType = trainingData.cardioType || "tabata";
 
-  const hasData = selType
-    ? Object.values(curSets).some(sets => sets && sets.some(s => s.weight || s.reps || s.variant))
-      || (cardioData.workTime || cardioData.restTime || cardioData.notes)
-    : false;
+  const buildLibraryFromCycles = async () => {
+    var added = 0;
+    var seen = Object.assign({}, libByNorm);
+    var toSave = [];
+    cycles.forEach(c => (c.weeks||[]).forEach(w => Object.keys(w.trainings||{}).forEach(k => {
+      ((w.trainings[k]||{}).exercises||[]).forEach(ex => {
+        var n = normExName(ex.name);
+        if (!n || seen[n]) return;
+        var entry = { id: libIdFor(ex.name), name: String(ex.name).trim(), measure: ex.measure||"reps", load: ex.load||"kg", createdAt: new Date().toISOString() };
+        seen[n] = entry; toSave.push(entry); added++;
+      });
+    })));
+    if (!added) { flash("המאגר כבר מעודכן — אין תרגילים חדשים"); return; }
+    setSaving(true);
+    try {
+      await Promise.all(toSave.map(e => DB.saveExercise(e)));
+      setLib(p => [...p, ...toSave]);
+      flash(added + " תרגילים נוספו למאגר 📚");
+    } catch(err) { console.error(err); flash("שגיאה בבניית המאגר", true); }
+    setSaving(false);
+  };
 
-  // Superset grouping — based on exercise code (A/B/C group)
-  function getGroup(ex) {
-    if (!ex || !ex.group) return null;
-    return ex.group; // "a", "b", or "c"
-  }
-  function isGroupStart(exList, idx) {
-    if (idx === 0) return true;
-    return exList[idx] && exList[idx-1] && exList[idx].group !== exList[idx-1].group;
-  }
-
+  // ---------- session actions ----------
+  const resetSession = () => {
+    setCurSets({}); setOpenEx({}); setExtras([]); setRemoved([]);
+    setCardioData({workTime:"",restTime:"",notes:""});
+    setSessionLogId(null); setSaveStatus("idle");
+  };
   const goBack = () => {
-    if (selType) { setSelType(null); setCurSets({}); setOpenEx({}); setCardioMode("amrap"); setCardioData({workTime:"",restTime:"",notes:""}); setSessionLogId(null); setSaveStatus("idle"); }
+    if (selType) { setSelType(null); resetSession(); }
     else if (selWeek) setSelWeek(null);
   };
-  const toggleEx = (idx, ex) => {
-    setOpenEx(p => ({...p, [idx]: !p[idx]}));
-    if (!curSets[idx]) {
-      // Pre-fill sets based on the exercise spec. For a range like "2-3",
-      // parseInt yields the lower number (2). When sets is missing or unparseable,
-      // default to 2 rows. The trainee can always add or remove rows freely.
-      var numSets = ex && ex.sets ? parseInt(ex.sets) || 2 : 2;
-      var preset = ex && ex.variant ? ex.variant : "";
-      var initSets = [];
-      for (var s=0; s<numSets; s++) initSets.push({weight:"",reps:"",rir:"",variant:preset,notes:""});
-      setCurSets(p => ({...p, [idx]: initSets}));
+
+  const toggleEx = (key, ex) => {
+    setOpenEx(p => ({...p, [key]: !p[key]}));
+    if (!curSets[key]) {
+      var numSets = ex && ex.sets ? (parseInt(ex.sets) || 3) : 3;
+      var init = [];
+      for (var s = 0; s < numSets; s++) init.push(emptySet());
+      setCurSets(p => ({...p, [key]: init}));
     }
+    ensureLib(ex.name, ex.measure, ex.load);
   };
-  const updateSet = (ei, si, f, v) => {
-    setCurSets(p => {var n={...p}; n[ei]=[...n[ei]]; n[ei][si]={...n[ei][si],[f]:v}; return n;});
+  const updateSet = (key, si, f, v) => {
+    setCurSets(p => { var n={...p}; n[key]=[...n[key]]; n[key][si]={...n[key][si],[f]:v}; return n; });
   };
-  const addSet = (ei) => {
-    setCurSets(p => {var n={...p}; var a=n[ei]||[]; var l=a[a.length-1]||{weight:"",reps:"",rir:"",variant:"",notes:""}; n[ei]=[...a,{weight:l.weight,reps:"",rir:"",variant:l.variant,notes:""}]; return n;});
+  const addSet = (key) => {
+    setCurSets(p => { var n={...p}; var a=n[key]||[]; var l=a[a.length-1]||emptySet(); n[key]=[...a,{load:l.load,value:"",rir:"",variation:l.variation,notes:""}]; return n; });
   };
-  const removeSet = (ei, si) => {
-    setCurSets(p => {var n={...p}; n[ei]=n[ei].filter((_,i)=>i!==si); if(!n[ei].length) delete n[ei]; return n;});
+  const removeSet = (key, si) => {
+    setCurSets(p => { var n={...p}; n[key]=n[key].filter((_,i)=>i!==si); if(!n[key].length) delete n[key]; return n; });
   };
 
-  // Build the current workout log from state. Returns null if nothing entered yet.
-  const buildLog = () => {
+  const removeExercise = (item) => {
+    if (!confirm("להסיר את התרגיל מהאימון הנוכחי?")) return;
+    setCurSets(p => { var n={...p}; delete n[item.key]; return n; });
+    setOpenEx(p => { var n={...p}; delete n[item.key]; return n; });
+    if (item.added) {
+      // re-key remaining extras' state maps
+      var rekey = p => {
+        var n = {};
+        Object.keys(p).forEach(k => {
+          var m = k.match(/^x_(\d+)$/);
+          if (!m) { n[k] = p[k]; return; }
+          var xi = parseInt(m[1]);
+          if (xi === item.extraIdx) return;
+          n[xi > item.extraIdx ? "x_"+(xi-1) : k] = p[k];
+        });
+        return n;
+      };
+      setExtras(prev => prev.filter((_,i) => i !== item.extraIdx));
+      setCurSets(rekey);
+      setOpenEx(rekey);
+    } else {
+      setRemoved(prev => prev.indexOf(item.planIdx) === -1 ? [...prev, item.planIdx] : prev);
+    }
+  };
+
+  const addExerciseFromLib = (entry) => {
+    var ex = { code:"", group:"", name: entry.name, variation:"", measure: entry.measure, load: entry.load, target:"", sets:"3", rir:"", notes:"", exerciseId: entry.id };
+    setExtras(p => [...p, ex]);
+    setAddModal(false); setLibSearch("");
+    flash("התרגיל נוסף לאימון ✅");
+  };
+  const createAndAddExercise = () => {
+    if (!newEx.name.trim()) return;
+    var entry = ensureLib(newEx.name, newEx.measure, newEx.load);
+    addExerciseFromLib(entry || {id: libIdFor(newEx.name), name: newEx.name.trim(), measure: newEx.measure, load: newEx.load});
+    setNewEx({name:"", measure:"reps", load:"kg"});
+  };
+
+  // ---------- build + persist log ----------
+  const buildLog = (status) => {
     if (!cycle || !sessionLogId) return null;
     var exLogs = [];
-    Object.entries(curSets).forEach(([ei,sets]) => {
-      var filled = sets.filter(s => s.reps||s.weight||s.variant||s.notes);
-      if (filled.length) {
-        var ex = exercises[parseInt(ei)];
-        exLogs.push({
-          code: ex ? ex.code : "",
-          group: ex ? (ex.group || (ex.code ? String(ex.code)[0].toLowerCase() : "")) : "",
-          name: ex ? ex.name : "",
-          targetReps: ex ? ex.reps : "",
-          sets: filled.map(s=>({
-            weight: s.weight ? parseFloat(s.weight) : null,
-            reps: s.reps ? parseInt(s.reps) : null,
-            rir: s.rir || null,
-            variant: s.variant || null,
-            notes: s.notes || null
-          }))
-        });
-      }
+    displayList.forEach(item => {
+      var sets = curSets[item.key];
+      if (!sets) return;
+      var filled = sets.filter(s => s.load || s.value || s.rir || s.variation || s.notes);
+      if (!filled.length) return;
+      var ex = item.ex;
+      var libEntry = libByNorm[normExName(ex.name)];
+      exLogs.push({
+        exerciseId: ex.exerciseId || (libEntry ? libEntry.id : libIdFor(ex.name)),
+        code: ex.code || "", group: ex.group || "",
+        name: ex.name, variation: ex.variation || "",
+        measure: ex.measure, load: ex.load,
+        target: ex.target || "", rir: ex.rir || "", coachNotes: ex.notes || "",
+        added: !!item.added,
+        sets: filled.map(s => ({
+          load: ex.load === "kg" ? (s.load ? parseFloat(s.load) : null) : (ex.load === "text" ? (s.load || null) : null),
+          value: ex.measure === "reps" ? (s.value ? parseInt(s.value) : null) : (s.value || null),
+          rir: s.rir || null,
+          variation: s.variation || null,
+          notes: s.notes || null
+        }))
+      });
     });
     var cardioLog = null;
     if (cardioData.workTime || cardioData.restTime || cardioData.notes) {
-      cardioLog = {workTime: cardioData.workTime, restTime: cardioData.restTime, notes: cardioData.notes, exercises: cardioExercises, type: weekCardioType};
+      cardioLog = {
+        workTime: cardioData.workTime, restTime: cardioData.restTime, notes: cardioData.notes,
+        exercises: cardioPlan ? cardioPlan.exercises : [], type: cardioPlan ? cardioPlan.type : "tabata"
+      };
     }
     if (!exLogs.length && !cardioLog) return null;
     return {
@@ -815,14 +869,16 @@ function App() {
       time: new Date().toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"}),
       cycleId: selCycleId, cycleName: cycle.name, weekNum: selWeek,
       type: selType, location: loc,
+      status: status || "active",
       exercises: exLogs,
+      addedExercises: extras,
+      removed: removed,
       cardio: cardioLog,
       updatedAt: new Date().toISOString()
     };
   };
 
-  // When a workout is opened, resolve its session id and resume any existing log
-  // for the same date/cycle/week/type so the user can keep updating it.
+  // resolve session id + hydrate existing log
   React.useEffect(() => {
     if (!selType || !cycle) return;
     var sid = "l_" + workoutDate + "_" + selCycleId + "_w" + selWeek + "_" + selType;
@@ -832,43 +888,53 @@ function App() {
     );
     if (existing) {
       sid = existing.id;
-      var hydrated = {};
-      var openMap = {};
-      (existing.exercises || []).forEach(function(exLog) {
-        var idx = exercises.findIndex(function(e) {
-          return (exLog.code && e.code === exLog.code) || normExName(e.name) === normExName(exLog.name);
-        });
-        if (idx >= 0) {
-          hydrated[idx] = (exLog.sets || []).map(function(s) {
-            return {
-              weight: s.weight != null ? String(s.weight) : "",
-              reps: s.reps != null ? String(s.reps) : "",
-              rir: s.rir != null ? String(s.rir) : "",
-              variant: s.variant || "",
-              notes: s.notes || ""
-            };
-          });
-          openMap[idx] = true;
+      var extrasDefs = (existing.addedExercises || []).map(e => Object.assign({}, e));
+      var removedIdx = existing.removed || [];
+      var hydrated = {}, openMap = {};
+      var usedExtra = {};
+      (existing.exercises || []).forEach(exLog => {
+        var key = null;
+        if (exLog.added) {
+          for (var xi = 0; xi < extrasDefs.length; xi++) {
+            if (!usedExtra[xi] && normExName(extrasDefs[xi].name) === normExName(exLog.name)) { usedExtra[xi] = true; key = "x_"+xi; break; }
+          }
+        } else {
+          var pi = planExercises.findIndex(p => (exLog.code && p.code === exLog.code) || normExName(p.name) === normExName(exLog.name));
+          if (pi >= 0) key = "p_"+pi;
         }
+        if (!key) return;
+        hydrated[key] = (exLog.sets || []).map(s => ({
+          load: s.load != null ? String(s.load) : (s.weight != null ? String(s.weight) : ""),
+          value: s.value != null ? String(s.value) : (s.reps != null ? String(s.reps) : ""),
+          rir: s.rir != null ? String(s.rir) : "",
+          variation: s.variation || "",
+          notes: s.notes || ""
+        }));
+        openMap[key] = true;
       });
-      skipSaveRef.current = true; // don't immediately re-save what we just loaded
+      skipSaveRef.current = true;
+      setExtras(extrasDefs);
+      setRemoved(removedIdx);
       setCurSets(hydrated);
       setOpenEx(openMap);
-      if (existing.cardio) {
-        setCardioData({workTime: existing.cardio.workTime||"", restTime: existing.cardio.restTime||"", notes: existing.cardio.notes||""});
-      }
+      if (existing.cardio) setCardioData({workTime: existing.cardio.workTime||"", restTime: existing.cardio.restTime||"", notes: existing.cardio.notes||""});
       if (existing.location) setLoc(existing.location);
       setSaveStatus("saved");
     }
     setSessionLogId(sid);
   // eslint-disable-next-line
-  }, [selType]);
+  }, [selType, hydrateKey]);
 
-  // Debounced autosave — fires whenever the user edits sets or cardio.
+  const hasData = selType
+    ? Object.values(curSets).some(sets => sets && sets.some(s => s.load || s.value || s.variation || s.notes))
+      || !!(cardioData.workTime || cardioData.restTime || cardioData.notes)
+    : false;
+
+  // debounced autosave
   React.useEffect(() => {
     if (!selType || !sessionLogId) return;
     if (skipSaveRef.current) { skipSaveRef.current = false; return; }
-    var log = buildLog();
+    var log = buildLog("active");
     if (!log) return;
     setSaveStatus("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -876,18 +942,14 @@ function App() {
       DB.saveLog(user.uid, log).then(function() {
         setLogs(p => [log, ...p.filter(l => l.id !== log.id)]);
         setSaveStatus("saved");
-      }).catch(function(err) {
-        console.error(err);
-        setSaveStatus("error");
-      });
+      }).catch(function(err) { console.error(err); setSaveStatus("error"); });
     }, 800);
   // eslint-disable-next-line
-  }, [curSets, cardioData, loc, sessionLogId]);
+  }, [curSets, cardioData, loc, extras, removed, sessionLogId]);
 
-  // Finish the workout: flush any pending save immediately, then return to selection.
   const finishWorkout = async () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    var log = buildLog();
+    var log = buildLog("done");
     if (log) {
       try {
         await DB.saveLog(user.uid, log);
@@ -895,9 +957,24 @@ function App() {
       } catch(err) { console.error(err); }
     }
     flash("האימון נשמר! 💪");
-    setSelType(null); setCurSets({}); setOpenEx({});
-    setCardioData({workTime:"",restTime:"",notes:""});
-    setSessionLogId(null); setSaveStatus("idle");
+    setSelType(null);
+    resetSession();
+  };
+
+  const reopenLog = (log) => {
+    var c = cycles.find(x => x.id === log.cycleId);
+    if (!c) { flash("הסייקל של האימון הזה כבר לא קיים במערכת", true); return; }
+    var updated = Object.assign({}, log, {status:"active"});
+    DB.saveLog(user.uid, updated).catch(console.error);
+    setLogs(p => p.map(l => l.id === log.id ? updated : l));
+    resetSession();
+    setSelCycleId(log.cycleId);
+    setSelWeek(log.weekNum);
+    setWorkoutDate(log.date);
+    setSelType(log.type);
+    setHydrateKey(k => k + 1);
+    setTab("home");
+    flash("האימון נפתח לעריכה ✏️");
   };
 
   const deleteLog = async (id) => {
@@ -909,36 +986,36 @@ function App() {
     } catch(err) { flash("שגיאה",true); }
   };
 
-  // Admin: upload cycle
+  // ---------- admin ----------
   const handleUpload = async () => {
     if (!uploadFile) return;
     setUploading(true);
     try {
-      var cycleData = await parseWaveXlsx(uploadFile);
-
-      // הגנה 1: סייקל ריק (גליונות לא נקראו נכון) — לא שומרים
-      if (!(cycleData.weeks || []).length) {
-        flash("הקובץ נקרא אבל לא נמצאו שבועות — בדקו ששמות הגליונות הם 1,2,3...", true);
-        setUploading(false);
-        return;
+      var cycleData = await parseCycleXlsx(uploadFile);
+      if (cycles.some(c => c.id === cycleData.id)) {
+        if (!confirm("סייקל \"" + cycleData.name + "\" כבר קיים במערכת. להחליף אותו?\n(אם זה סייקל חדש — עדכנו את מספר הסייקל #N בתא B2 של הקובץ)")) {
+          setUploading(false);
+          return;
+        }
       }
-
-      // הגנה 2: בדיקת התנגשות מספר לפני דריסה
-      var clash = cycles.find(c => c.id === cycleData.id);
-      if (clash) {
-        var ok = confirm(
-          "כבר קיים סייקל עם מספר #" + cycleData.number + " (\"" + clash.name + "\").\n\n" +
-          "העלאה תדרוס אותו לגמרי!\n\n" +
-          "אם זה סייקל חדש — בטלו, שנו את המספר (#) בתא B2 בקובץ, והעלו שוב.\n" +
-          "להמשיך ולדרוס?"
-        );
-        if (!ok) { setUploading(false); return; }
-      }
-
       await DB.saveCycle(cycleData);
-      setCycles(p => [cycleData, ...p.filter(c=>c.id!==cycleData.id)]);
+      setCycles(p => [cycleData, ...p.filter(c => c.id !== cycleData.id)].sort((a,b)=>b.number-a.number));
+      // auto-add new exercises to the library
+      var toSave = [];
+      var seen = Object.assign({}, libByNorm);
+      (cycleData.weeks||[]).forEach(w => Object.keys(w.trainings||{}).forEach(k => {
+        ((w.trainings[k]||{}).exercises||[]).forEach(ex => {
+          var n = normExName(ex.name);
+          if (!n || seen[n]) return;
+          var entry = { id: libIdFor(ex.name), name: String(ex.name).trim(), measure: ex.measure, load: ex.load, createdAt: new Date().toISOString() };
+          seen[n] = entry; toSave.push(entry);
+        });
+      }));
+      if (toSave.length) {
+        Promise.all(toSave.map(e => DB.saveExercise(e))).then(() => setLib(p => [...p, ...toSave])).catch(console.error);
+      }
       setUploadFile(null);
-      flash("הסייקל הועלה בהצלחה! 🎉");
+      flash("הסייקל הועלה בהצלחה! 🎉" + (toSave.length ? " (+" + toSave.length + " תרגילים למאגר)" : ""));
     } catch(err) {
       console.error(err);
       flash("שגיאה בקריאת הקובץ: " + err.message, true);
@@ -956,11 +1033,7 @@ function App() {
     } catch(err) { flash("שגיאה",true); }
   };
 
-  // ======== CYCLE EDITOR ========
-  const startEditCycle = (c) => {
-    setEditCycle(JSON.parse(JSON.stringify(c)));
-    setEditOpenWeeks({});
-  };
+  const startEditCycle = (c) => { setEditCycle(JSON.parse(JSON.stringify(c))); setEditOpenWeeks({}); };
   const saveEditCycle = async () => {
     if (!editCycle) return;
     setSaving(true);
@@ -969,41 +1042,56 @@ function App() {
       setCycles(p => p.map(c => c.id === editCycle.id ? editCycle : c));
       setEditCycle(null);
       flash("הסייקל עודכן! ✅");
-    } catch(err) {
-      console.error(err);
-      flash("שגיאה בשמירה", true);
-    }
+    } catch(err) { console.error(err); flash("שגיאה בשמירה", true); }
     setSaving(false);
   };
 
-  // ======== DASHBOARD ========
-  const viewUserLogs = async (u) => {
-    setDashUser(u);
-    setDashLoading(true);
+  const saveLibEdit = async () => {
+    if (!libEditId || !libEditForm.name.trim()) return;
+    var updated = Object.assign({}, lib.find(e => e.id === libEditId), { name: libEditForm.name.trim(), measure: libEditForm.measure, load: libEditForm.load });
     try {
-      var uLogs = await DB.loadUserLogs(u.uid);
-      setDashLogs(uLogs);
-    } catch(err) {
-      console.error(err);
-      flash("שגיאה בטעינת נתונים", true);
-      setDashLogs([]);
-    }
+      await DB.saveExercise(updated);
+      setLib(p => p.map(e => e.id === libEditId ? updated : e));
+      setLibEditId(null);
+      flash("התרגיל עודכן ✅");
+    } catch(err) { flash("שגיאה", true); }
+  };
+  const deleteLibEntry = async (id) => {
+    if (!confirm("למחוק את התרגיל מהמאגר? (היסטוריית האימונים לא תימחק)")) return;
+    try {
+      await DB.deleteExercise(id);
+      setLib(p => p.filter(e => e.id !== id));
+      flash("נמחק מהמאגר");
+    } catch(err) { flash("שגיאה", true); }
+  };
+
+  // ---------- dashboard ----------
+  const viewUserLogs = async (u) => {
+    setDashUser(u); setDashLoading(true);
+    try { setDashLogs(await DB.loadUserLogs(u.uid)); }
+    catch(err) { console.error(err); flash("שגיאה בטעינת נתונים", true); setDashLogs([]); }
     setDashLoading(false);
   };
   const exportUserCsv = () => {
     if (!dashLogs.length || !dashUser) return;
-    var rows = [["תאריך","שעה","סייקל","שבוע","אימון","קוד","תרגיל","יעד חזרות","סט","משקל","חזרות","RIR","וריאציה","הערות"]];
+    var rows = [["תאריך","שעה","סייקל","שבוע","אימון","מיקום","קוד","תרגיל","וריאציה","יעד","סט","משקל/עומס","חזרות/זמן","RIR","הערות"]];
     dashLogs.forEach(function(log) {
       (log.exercises||[]).forEach(function(ex) {
         (ex.sets||[]).forEach(function(s, si) {
-          rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", ex.code||"", ex.name||"", ex.targetReps||"", si+1, s.weight||"", s.reps||"", s.rir||"", s.variant||"", s.notes||""]);
+          var loadVal = s.load != null ? s.load : (s.weight != null ? s.weight : "");
+          var valVal = s.value != null ? s.value : (s.reps != null ? s.reps : "");
+          rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"",
+            log.location==="gym"?"סטודיו":"קיר", ex.code||"", ex.name||"", (s.variation||ex.variation||""),
+            ex.target||ex.targetReps||"", si+1, loadVal, valVal, s.rir||"", s.notes||""]);
         });
       });
       if (log.cardio) {
-        rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"", (log.cardio.type||"").toUpperCase(), (log.cardio.exercises||[]).join("|"), "", "", "", "", "", "", log.cardio.workTime+"/"+log.cardio.restTime+(log.cardio.notes?" "+log.cardio.notes:"")]);
+        rows.push([log.date, log.time||"", log.cycleName||"", log.weekNum||"", TN[log.type]||log.type||"",
+          log.location==="gym"?"סטודיו":"קיר", (log.cardio.type||"").toUpperCase(), (log.cardio.exercises||[]).join("|"),
+          "", "", "", "", log.cardio.workTime+"/"+log.cardio.restTime, "", log.cardio.notes||""]);
       }
     });
-    var csv = "\uFEFF" + rows.map(function(r){return r.join(",");}).join("\n");
+    var csv = "\uFEFF" + rows.map(r => r.map(x => String(x==null?"":x).replace(/,/g,";")).join(",")).join("\n");
     var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1011,18 +1099,15 @@ function App() {
     a.click();
   };
 
-  // Load log counts for dashboard
   React.useEffect(() => {
     if (!admin || !allUsers.length) return;
     var counts = {};
-    Promise.all(allUsers.map(function(u) {
-      return db.collection("users").doc(u.uid).collection("logs").get().then(function(snap) {
-        counts[u.uid] = snap.size;
-      }).catch(function() { counts[u.uid] = 0; });
-    })).then(function() {
-      setUserLogCounts(counts);
-    });
-  }, [allUsers]);
+    Promise.all(allUsers.map(u =>
+      db.collection("users").doc(u.uid).collection("logs").get()
+        .then(snap => { counts[u.uid] = snap.size; })
+        .catch(() => { counts[u.uid] = 0; })
+    )).then(() => setUserLogCounts(counts));
+  }, [allUsers, admin]);
 
   // =================== RENDER ===================
 
@@ -1040,12 +1125,104 @@ function App() {
     </div>
   );
 
-  var admin = isAdmin(user.email);
+  // ---------- shared renderers ----------
+  const renderLogDetail = (log) => (
+    <div className="hist-detail">
+      {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
+        <strong>{(ex.code?"["+ex.code+"] ":"")+(ex.name||"").substring(0,40)}</strong>
+        {(ex.variation) && <span className="ex-variation">{ex.variation}</span>}
+        {ex.added && <span style={{color:"var(--green)",fontSize:10}}> +נוסף</span>}
+        {(ex.target||ex.targetReps) && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+(ex.target||ex.targetReps)+")"}</span>}<br/>
+        {(ex.sets||[]).map((s,si)=><span key={si}>
+          {fmtSetStr(s)}
+          {s.rir && <span>{" RIR "+s.rir}</span>}
+          {s.variation && <span className="hist-note">{" "+s.variation}</span>}
+          {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
+          {si<ex.sets.length-1?" | ":""}
+        </span>)}
+      </div>)}
+      {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
+        <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"tabata").toUpperCase()+" "}</span>
+        {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
+        {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
+        {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
+      </div>}
+    </div>
+  );
 
   return (
     <div className="app">
       {toast && <div className={"toast"+(toast.err?" error":"")}>{toast.msg}</div>}
       {saving && <div className="saving-overlay"><div className="spinner"></div><div style={{color:"var(--text2)"}}>שומר...</div></div>}
+
+      {/* ===== PREVIOUS PERFORMANCE MODAL ===== */}
+      {perfModal && (() => {
+        var hist = getPerfHistory(perfModal, logs, sessionLogId, 3);
+        return <div className="modal-overlay" onClick={()=>setPerfModal(null)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">
+              <span>📊 {perfModal.name}{perfModal.variation ? " · "+perfModal.variation : ""}</span>
+              <button className="modal-close" onClick={()=>setPerfModal(null)}>✕</button>
+            </div>
+            {!hist.length ? <div className="empty" style={{padding:"30px 10px"}}>אין עדיין ביצועים קודמים לתרגיל הזה</div> :
+            hist.map((h,hi)=><div className="perf-entry" key={hi}>
+              <div className="perf-entry-head">
+                <span>{h.date}</span>
+                <span className="perf-entry-meta">{(h.cycleName||"")+(h.weekNum?" · שבוע "+h.weekNum:"")}</span>
+              </div>
+              {h.entry.variation && <div style={{marginTop:4}}><span className="ex-variation">{h.entry.variation}</span></div>}
+              {(h.entry.sets||[]).map((s,si)=><div className="perf-set" key={si}>
+                <span className="perf-set-num">{si+1}</span>
+                <span style={{fontWeight:700}}>{fmtSetStr(s) || "—"}</span>
+                {s.rir && <span style={{fontSize:11,color:"var(--accent)"}}>RIR {s.rir}</span>}
+                {s.variation && <span className="perf-set-note">{s.variation}</span>}
+                {s.notes && <span className="perf-set-note">— {s.notes}</span>}
+              </div>)}
+            </div>)}
+          </div>
+        </div>;
+      })()}
+
+      {/* ===== ADD EXERCISE MODAL ===== */}
+      {addModal && (() => {
+        var q = normExName(libSearch);
+        var results = lib.filter(e => !q || normExName(e.name).indexOf(q) >= 0).slice(0, 30);
+        return <div className="modal-overlay" onClick={()=>setAddModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()}>
+            <div className="modal-title">
+              <span>➕ הוספת תרגיל לאימון</span>
+              <button className="modal-close" onClick={()=>setAddModal(false)}>✕</button>
+            </div>
+            <input className="lib-search" type="text" placeholder="🔍 חיפוש במאגר התרגילים..." value={libSearch} onChange={e=>setLibSearch(e.target.value)} />
+            <div style={{maxHeight:"32vh",overflowY:"auto"}}>
+              {results.map(e=><div className="lib-row" key={e.id} onClick={()=>addExerciseFromLib(e)}>
+                <div className="lib-row-name">{e.name}</div>
+                <span className={"badge-mini"+(e.measure==="time"?" time":"")}>{e.measure==="time"?"⏱ זמן":"חזרות"}</span>
+                <span className={"badge-mini"+(e.load==="kg"?" kg":e.load==="text"?" loadtxt":"")}>{e.load==="kg"?"ק״ג":e.load==="text"?"עומס":"—"}</span>
+              </div>)}
+              {!results.length && <div style={{padding:"14px 4px",fontSize:13,color:"var(--text3)"}}>לא נמצא במאגר — צרו חדש למטה ⬇</div>}
+            </div>
+            <div className="modal-section-label">או צרו תרגיל חדש</div>
+            <input className="lib-search" type="text" placeholder="שם התרגיל (השם הראשי בלבד)" value={newEx.name} onChange={e=>setNewEx(p=>({...p,name:e.target.value}))} />
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1}}>
+                <div className="seg-toggle">
+                  <button className={"seg-btn"+(newEx.measure==="reps"?" active":"")} onClick={()=>setNewEx(p=>({...p,measure:"reps"}))}>חזרות</button>
+                  <button className={"seg-btn"+(newEx.measure==="time"?" active":"")} onClick={()=>setNewEx(p=>({...p,measure:"time"}))}>⏱ זמן</button>
+                </div>
+              </div>
+              <div style={{flex:1.4}}>
+                <div className="seg-toggle">
+                  <button className={"seg-btn"+(newEx.load==="kg"?" active":"")} onClick={()=>setNewEx(p=>({...p,load:"kg"}))}>ק״ג</button>
+                  <button className={"seg-btn"+(newEx.load==="text"?" active":"")} onClick={()=>setNewEx(p=>({...p,load:"text"}))}>עומס</button>
+                  <button className={"seg-btn"+(newEx.load==="none"?" active":"")} onClick={()=>setNewEx(p=>({...p,load:"none"}))}>ללא</button>
+                </div>
+              </div>
+            </div>
+            <button className="modal-primary" disabled={!newEx.name.trim()} onClick={createAndAddExercise}>צור והוסף לאימון</button>
+          </div>
+        </div>;
+      })()}
 
       {/* ===== HOME: SELECT ===== */}
       {tab==="home" && !selType && <div>
@@ -1066,16 +1243,14 @@ function App() {
         ) : (<div>
           <div className="section-title">בחרו סייקל</div>
           <div className="chips">
-            {cycles.length > 0 && (() => {
-              var latest = cycles[0];
-              var prev = cycles[1];
-              var older = cycles.slice(2);
-              return <>
+            {(() => {
+              var latest = cycles[0], prev = cycles[1], older = cycles.slice(2);
+              return <React.Fragment>
                 <div className={"chip current"+(selCycleId===latest.id?" active":"")} onClick={()=>{setSelCycleId(latest.id);setSelWeek(null);setSelType(null);}}>{latest.name}</div>
                 {prev && <div className={"chip prev"+(selCycleId===prev.id?" active":"")} onClick={()=>{setSelCycleId(prev.id);setSelWeek(null);setSelType(null);}}>{prev.name}</div>}
                 {older.length > 0 && !showOldCycles && <button className="show-more-btn" onClick={()=>setShowOldCycles(true)}>+ {older.length} סייקלים ישנים</button>}
                 {showOldCycles && older.map(c=><div key={c.id} className={"chip old"+(selCycleId===c.id?" active":"")} onClick={()=>{setSelCycleId(c.id);setSelWeek(null);setSelType(null);}}>{c.name}</div>)}
-              </>;
+              </React.Fragment>;
             })()}
           </div>
 
@@ -1097,11 +1272,11 @@ function App() {
                 var td = (week.trainings||{})[tNum];
                 var exCount = td ? (td.exercises||[]).length : 0;
                 if (!exCount) return null;
-                var cardioCount = td ? (td.cardio||[]).length : 0;
-                return <div key={t} className={"wt-card"+(selType===t?" active":"")} onClick={()=>{setSelType(t);setCurSets({});setOpenEx({});setLoc("gym");setCardioData({workTime:"",restTime:"",notes:""});setWorkoutDate(new Date().toISOString().split("T")[0]);}}>
+                var cardioCount = td && td.cardio ? (td.cardio.exercises||[]).length : 0;
+                return <div key={t} className={"wt-card"+(selType===t?" active":"")} onClick={()=>{resetSession();setLoc("gym");setWorkoutDate(new Date().toISOString().split("T")[0]);setSelType(t);setHydrateKey(k=>k+1);}}>
                   <div className="wt-icon">{TI[t]}</div>
-                  <div className="wt-name">{TN[t]}</div>
-                  <div className="wt-count">{exCount+" תרגילים"+(cardioCount?" + "+td.cardioType.toUpperCase():"")}</div>
+                  <div className="wt-name">{(td.title||"").replace(/^אימון\s*\d+\s*[—-]?\s*/,"") || TN[t]}</div>
+                  <div className="wt-count">{exCount+" תרגילים"+(cardioCount?" + "+(td.cardio.type||"").toUpperCase():"")}</div>
                 </div>;
               })}
             </div>
@@ -1115,114 +1290,128 @@ function App() {
           <button className="back-btn" onClick={goBack}>→</button>
           <img className="logo-img" src="rangeicon.jpg" alt="R" style={{width:34,height:34}} onError={(e)=>{e.target.style.display='none'}} />
           <div>
-            <div style={{fontSize:18,fontWeight:800}}>{TI[selType]+" "+TN[selType]}</div>
+            <div style={{fontSize:18,fontWeight:800}}>{TI[selType]+" "+((trainingData&&trainingData.title)||TN[selType])}</div>
             <div style={{fontSize:12,color:"var(--text2)"}}>{cycle.name+" · שבוע "+selWeek+(week.peak?" · PEAK WEEK":"")}</div>
           </div>
         </div>
 
-        {/* Date picker */}
         <div className="date-bar">
           <label>📅 תאריך:</label>
           <input className="date-input" type="date" value={workoutDate} onChange={e=>setWorkoutDate(e.target.value)} />
           <button className="today-btn" onClick={()=>setWorkoutDate(new Date().toISOString().split("T")[0])}>היום</button>
         </div>
 
+        <div className="loc-toggle">
+          <button className={"loc-btn"+(loc==="home"?" active":"")} onClick={()=>setLoc("home")}>🧱 קיר</button>
+          <button className={"loc-btn"+(loc==="gym"?" active":"")} onClick={()=>setLoc("gym")}>🏋️ סטודיו</button>
+        </div>
 
-        {/* EXERCISES */}
         <div style={{marginTop:12}}>
-          {exercises.map((ex,idx) => {
-            var grp = getGroup(ex);
-            var showLabel = isGroupStart(exercises, idx);
-            var lastPerf = getLastPerf(ex, logs, sessionLogId);
-            var lastSummary = lastPerf ? (lastPerf.sets||[])
-              .filter(s => s.weight != null || s.reps != null)
-              .map(s => [s.weight != null ? s.weight + "ק״ג" : "", s.reps != null ? "×" + s.reps : ""].filter(Boolean).join(""))
-              .join(" · ") : "";
-            return <div key={idx}>
+          {displayList.map((item, di) => {
+            var ex = item.ex;
+            var grp = item.added ? "x" : (ex.group || null);
+            var showLabel = item.added
+              ? (di === 0 || !displayList[di-1].added)
+              : (di === 0 || displayList[di-1].added || displayList[di-1].ex.group !== ex.group);
+            var lastPerf = getPerfHistory(ex, logs, sessionLogId, 1)[0];
+            var lastSummary = lastPerf ? (lastPerf.entry.sets||[]).filter(setHasData).map(fmtSetStr).join(" · ") : "";
+            var sets = curSets[item.key] || [];
+            return <div key={item.key}>
               {showLabel && grp && <div className="group-label">
-                <div className={"group-badge "+grp}>{grp.toUpperCase()}</div>
-                <div className="group-text">{({a:"סופרסט A",b:"סופרסט B",c:"סופרסט C"})[grp]}</div>
+                <div className={"group-badge "+(item.added?"d":grp)} style={item.added?{width:"auto",padding:"0 10px",borderRadius:8,fontSize:11}:{}}>{item.added?"נוספו":grp.toUpperCase()}</div>
+                <div className="group-text">{item.added?"תרגילים שנוספו באימון":GROUP_NAMES[grp]||""}</div>
                 <div className="group-line"></div>
               </div>}
-              <div className={"ex-card"+(grp?" g"+grp:"")}>
-                <div className="ex-header" onClick={()=>toggleEx(idx, ex)}>
-                  <div className="ex-num">{ex.code||idx+1}</div>
+              <div className={"ex-card "+(item.added?"gx":(grp?"g"+grp:""))}>
+                <div className="ex-header" onClick={()=>toggleEx(item.key, ex)}>
+                  <div className="ex-num">{ex.code||"+"}</div>
                   <div style={{flex:1}}>
-                    <div className="ex-name">{ex.name}</div>
+                    <div className="ex-name">
+                      {ex.name}
+                      {ex.variation && <span className="ex-variation">{ex.variation}</span>}
+                    </div>
                     <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>
-                      {ex.reps && <span>{describeSpec(ex.reps)} </span>}
-                      {ex.sets && <span>· {ex.sets} סטים </span>}
-                      {ex.rir && <span>· RIR {ex.rir}</span>}
-                      {ex.variant && <span style={{color:"var(--accent)"}}> · {ex.variant}</span>}
+                      {ex.target && <span>{"יעד: "+ex.target+" "}</span>}
+                      {ex.sets && <span>{"· "+ex.sets+" סטים "}</span>}
+                      {ex.rir && <span>{"· RIR "+ex.rir+" "}</span>}
+                      {ex.measure==="time" && <span style={{color:"var(--yellow)"}}>· ⏱ זמן</span>}
+                      {ex.load==="text" && <span style={{color:"var(--orange)"}}>· עומס</span>}
                     </div>
-                    {ex.extraSets && ex.extraSets.map((es,esi)=>(
-                      <div key={esi} style={{fontSize:10,color:"var(--text3)"}}>
-                        {"+ "+describeSpec(es.reps)+" | "+es.sets+" סטים | RIR "+es.rir+(es.variant?" | "+es.variant:"")}
-                      </div>
-                    ))}
-                    {lastSummary && <div style={{fontSize:11,color:"var(--green)",marginTop:3,fontWeight:600}}>
-                      📊 פעם קודמת: {lastSummary}
-                    </div>}
+                    {ex.notes && <div style={{fontSize:11,color:"var(--text2)",marginTop:2}}>💬 {ex.notes}</div>}
+                    <button className="prev-perf-line" onClick={(e)=>{e.stopPropagation();setPerfModal(ex);}}>
+                      📊 {lastSummary ? "פעם קודמת: "+lastSummary : "היסטוריית ביצועים"}
+                    </button>
                   </div>
-                  <span className="ex-chevron">{openEx[idx]?"▴":"▾"}</span>
+                  <button className="ex-remove" onClick={(e)=>{e.stopPropagation();removeExercise(item);}}>🗑</button>
+                  <span className="ex-chevron">{openEx[item.key]?"▴":"▾"}</span>
                 </div>
-                {openEx[idx] && <div className="sets-area">
-                  <div className="sets-header" style={{gap:4}}>
+                {openEx[item.key] && <div className="sets-area">
+                  <div className="sets-header">
                     <div className="set-label"></div>
-                    <div style={{flex:1}} className="sets-header-label">משקל</div>
-                    <div style={{flex:1}} className="sets-header-label">חזרות</div>
-                    <div style={{width:24}}></div>
+                    {ex.load!=="none" && <div style={{flex:1}} className="sets-header-label">{ex.load==="kg"?"משקל":"עומס"}</div>}
+                    <div style={{flex:1}} className="sets-header-label">{ex.measure==="time"?"זמן":"חזרות"}</div>
+                    <div style={{width:30}}></div>
                   </div>
-                  {(curSets[idx]||[]).map((s,si)=>{
+                  {sets.map((s,si)=>{
+                    var lpSet = lastPerf && lastPerf.entry.sets ? lastPerf.entry.sets[si] : null;
+                    var lpLoad = lpSet ? (lpSet.load != null ? String(lpSet.load) : (lpSet.weight != null ? String(lpSet.weight) : "")) : "";
+                    var lpVal = lpSet ? (lpSet.value != null ? String(lpSet.value) : (lpSet.reps != null ? String(lpSet.reps) : "")) : "";
                     return <div key={si}>
-                    <div className="set-row" style={{gap:4}}>
-                      <div className="set-label">{si+1}</div>
-                      <input className="set-input" style={{flex:1}} type="number" inputMode="decimal" placeholder="ק״ג" value={s.weight} onChange={e=>updateSet(idx,si,"weight",e.target.value)} />
-                      <input className="set-input" style={{flex:1}} type="number" inputMode="numeric" placeholder="חז'" value={s.reps} onChange={e=>updateSet(idx,si,"reps",e.target.value)} />
-                      <button className="set-del" onClick={()=>removeSet(idx,si)}>✕</button>
-                    </div>
-                    <div className="set-notes-row" style={{gap:4}}>
-                      <input className="set-notes" style={{flex:"0 0 56px",textAlign:"center"}} type="number" inputMode="numeric" placeholder="RIR" value={s.rir} onChange={e=>updateSet(idx,si,"rir",e.target.value)} />
-                      <input className="set-notes" style={{flex:1}} type="text" placeholder={"וריאציה / הערות..."+(ex.variant?" ("+ex.variant+")":" ")} value={s.variant} onChange={e=>updateSet(idx,si,"variant",e.target.value)} />
-                    </div>
-                  </div>;
+                      <div className="set-row">
+                        <div className="set-label">{si+1}</div>
+                        {ex.load==="kg" && <input className="set-input" type="number" inputMode="decimal" placeholder={lpLoad||"ק״ג"} value={s.load} onChange={e=>updateSet(item.key,si,"load",e.target.value)} />}
+                        {ex.load==="text" && <input className="set-input" type="text" placeholder={lpLoad||"גומיה / עומס"} value={s.load} onChange={e=>updateSet(item.key,si,"load",e.target.value)} />}
+                        {ex.measure==="reps"
+                          ? <input className="set-input" type="number" inputMode="numeric" placeholder={lpVal||"חז'"} value={s.value} onChange={e=>updateSet(item.key,si,"value",e.target.value)} />
+                          : <input className="set-input" type="text" inputMode="numeric" placeholder={lpVal||"0:45"} value={s.value} onChange={e=>updateSet(item.key,si,"value",e.target.value)} />}
+                        <button className="set-del" onClick={()=>removeSet(item.key,si)}>✕</button>
+                      </div>
+                      <div className="set-notes-row">
+                        <input className="set-notes" style={{flex:"0 0 52px",textAlign:"center"}} type="number" inputMode="numeric" placeholder={ex.rir?("RIR "+ex.rir):"RIR"} value={s.rir} onChange={e=>updateSet(item.key,si,"rir",e.target.value)} />
+                        <input className="set-notes" style={{flex:1}} type="text" placeholder={ex.variation?("וריאציה ("+ex.variation+")"):"וריאציה"} value={s.variation} onChange={e=>updateSet(item.key,si,"variation",e.target.value)} />
+                        <input className="set-notes" style={{flex:1.2}} type="text" placeholder="הערות..." value={s.notes} onChange={e=>updateSet(item.key,si,"notes",e.target.value)} />
+                      </div>
+                    </div>;
                   })}
-                  <button className="add-set-btn" onClick={()=>addSet(idx)}>+ הוסף סט</button>
+                  <button className="add-set-btn" onClick={()=>addSet(item.key)}>+ הוסף סט</button>
                 </div>}
               </div>
             </div>;
           })}
 
-          {/* CARDIO/TABATA section at bottom of workout */}
-          {cardioExercises.length > 0 && <div style={{marginTop:12}}>
+          <button className="add-ex-btn" onClick={()=>{setAddModal(true);setLibSearch("");}}>➕ הוסף תרגיל לאימון</button>
+
+          {cardioPlan && (cardioPlan.exercises||[]).length > 0 && <div style={{marginTop:14}}>
             <div className="group-label">
-              <div className="group-badge" style={{background:"var(--orange)",fontSize:10,width:40,borderRadius:8}}>
-                {weekCardioType==="amrap"?"AMRAP":"TABATA"}
+              <div className="group-badge" style={{background:"var(--orange)",fontSize:10,width:"auto",padding:"0 10px",borderRadius:8}}>
+                {(cardioPlan.type||"tabata").toUpperCase()}
               </div>
+              {(cardioPlan.work||cardioPlan.rest) && <div className="group-text">{(cardioPlan.work?"עבודה "+cardioPlan.work:"")+(cardioPlan.rest?" · מנוחה "+cardioPlan.rest:"")}</div>}
               <div className="group-line"></div>
             </div>
             <div className="cardio-ex-list">
-              {cardioExercises.map((ex,i)=>
+              {cardioPlan.exercises.map((exName,i)=>
                 <div className="cardio-ex-item" key={i}>
                   <div className="ex-num">{i+1}</div>
-                  <div className="ex-name">{ex}</div>
+                  <div className="ex-name">{exName}</div>
                 </div>
               )}
             </div>
             <div style={{padding:"0 16px",marginTop:8,display:"flex",gap:8}}>
-              <div className="cardio-time-box" style={{flex:1}}>
+              <div className="cardio-time-box">
                 <div className="cardio-time-label">⏱ זמן עבודה</div>
-                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.workTime} onChange={e=>setCardioData(p=>({...p,workTime:e.target.value}))} />
+                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder={cardioPlan.work||"0:00"} value={cardioData.workTime} onChange={e=>setCardioData(p=>({...p,workTime:e.target.value}))} />
               </div>
-              <div className="cardio-time-box" style={{flex:1}}>
+              <div className="cardio-time-box">
                 <div className="cardio-time-label">😮‍💨 זמן מנוחה</div>
-                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder="0:00" value={cardioData.restTime} onChange={e=>setCardioData(p=>({...p,restTime:e.target.value}))} />
+                <input className="cardio-time-input" type="text" inputMode="numeric" placeholder={cardioPlan.rest||"0:00"} value={cardioData.restTime} onChange={e=>setCardioData(p=>({...p,restTime:e.target.value}))} />
               </div>
             </div>
-            <div className="cardio-notes-wrap" style={{marginTop:8}}>
+            <div className="cardio-notes-wrap">
               <textarea className="cardio-notes-input" placeholder="הערות קרדיו..." value={cardioData.notes} onChange={e=>setCardioData(p=>({...p,notes:e.target.value}))} />
             </div>
           </div>}
+          <div style={{height:70}}></div>
         </div>
 
         {hasData && <div className="save-bar"><div className="save-bar-inner" style={{display:"flex",alignItems:"center",gap:10}}>
@@ -1243,18 +1432,14 @@ function App() {
         </div>
         {!logs.length ? <div className="empty"><div className="empty-icon">📋</div><div>עדיין אין אימונים שמורים</div></div> :
         (() => {
-          // Group logs: cycleId > weekNum > logs[]
-          var grouped = {};
-          var cycleOrder = [];
+          var grouped = {}, cycleOrder = [];
           logs.forEach(log => {
             var cid = log.cycleId||"unknown";
-            var cname = log.cycleName||cid;
-            if (!grouped[cid]) { grouped[cid] = {name:cname, weeks:{}}; cycleOrder.push(cid); }
+            if (!grouped[cid]) { grouped[cid] = {name:log.cycleName||cid, weeks:{}}; cycleOrder.push(cid); }
             var wk = log.weekNum||0;
             if (!grouped[cid].weeks[wk]) grouped[cid].weeks[wk] = [];
             grouped[cid].weeks[wk].push(log);
           });
-          // dedupe cycleOrder
           cycleOrder = [...new Set(cycleOrder)];
           return cycleOrder.map(cid => {
             var cg = grouped[cid];
@@ -1286,30 +1471,16 @@ function App() {
                       <div className="hist-log-header">
                         <div>
                           <span className="hist-log-type">{TN[log.type]||log.type}</span>
+                          {log.status==="active" && <span className="active-badge">פעיל</span>}
+                          <span style={{fontSize:11,color:"var(--text3)",marginRight:8}}>{" · "+(log.location==="gym"?"סטודיו":"קיר")}</span>
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
                           <span className="hist-log-date">{log.date+(log.time?" · "+log.time:"")}</span>
                           <button className="hist-log-del" onClick={()=>deleteLog(log.id)}>🗑</button>
                         </div>
                       </div>
-                      <div className="hist-detail">
-                        {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
-                          <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
-                          {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
-                          {(ex.sets||[]).map((s,si)=><span key={si}>
-                            {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
-                            {s.variant && <span className="hist-note">{" "+s.variant}</span>}
-                            {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
-                            {si<ex.sets.length-1?" | ":""}
-                          </span>)}
-                        </div>)}
-                        {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
-                          <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"tabata").toUpperCase()+" "}</span>
-                          {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
-                          {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
-                          {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
-                        </div>}
-                      </div>
+                      {renderLogDetail(log)}
+                      <button className="reopen-btn" onClick={()=>reopenLog(log)}>✏️ החזר לאימון פעיל</button>
                     </div>)}
                   </div>;
                 })}
@@ -1326,7 +1497,6 @@ function App() {
           <div className="logo-text" style={{fontSize:22}}>{admin ? "ניהול" : "הגדרות"}</div>
         </div>
 
-        {/* User info */}
         <div className="storage-info">
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <img src={user.photoURL} style={{width:32,height:32,borderRadius:"50%"}} onError={e=>{e.target.style.display='none'}} />
@@ -1337,11 +1507,10 @@ function App() {
           </div>
         </div>
 
-        {/* Admin: Upload cycle */}
         {admin && !editCycle && <div className="admin-section">
           <div className="admin-card">
             <h3>📤 העלאת סייקל חדש</h3>
-            <p>העלו קובץ xlsx מתבנית הסייקל. הקובץ ייקרא אוטומטית ויתווסף למערכת.</p>
+            <p>העלו קובץ xlsx בתבנית החדשה. חשוב: מספר סייקל (#N) בתא B2 של גיליון 1, ועמודות סטים/RIR בפורמט טקסט.</p>
             <div className="file-upload">
               <label className={"file-upload-btn"+(uploadFile?" has-file":"")} htmlFor="cycle-file">
                 {uploadFile ? ("✅ "+uploadFile.name) : "📁 בחרו קובץ xlsx"}
@@ -1352,20 +1521,63 @@ function App() {
           </div>
 
           <div className="admin-card">
+            <div className="admin-collapse-header" onClick={()=>setAdminLibOpen(p=>!p)}>
+              <h3>📚 מאגר תרגילים ({lib.length})</h3>
+              <span style={{color:"var(--text3)",fontSize:18}}>{adminLibOpen?"▾":"◂"}</span>
+            </div>
+            {adminLibOpen && <div>
+              <button className="add-set-btn" style={{marginTop:10}} onClick={buildLibraryFromCycles}>🔄 בנה/עדכן מאגר מהסייקלים הקיימים</button>
+              <input className="user-search" type="text" placeholder="🔍 חיפוש תרגיל..." value={libAdminSearch} onChange={e=>setLibAdminSearch(e.target.value)} />
+              {lib
+                .filter(e => { var q = normExName(libAdminSearch); return !q || normExName(e.name).indexOf(q) >= 0; })
+                .sort((a,b)=>a.name.localeCompare(b.name,"he"))
+                .map(e => libEditId === e.id ? (
+                  <div className="lib-edit-row" key={e.id}>
+                    <div className="lib-edit-inputs">
+                      <input className="lib-edit-name" value={libEditForm.name} onChange={ev=>setLibEditForm(p=>({...p,name:ev.target.value}))} />
+                    </div>
+                    <div style={{display:"flex",gap:6}}>
+                      <div style={{flex:1}} className="seg-toggle">
+                        <button className={"seg-btn"+(libEditForm.measure==="reps"?" active":"")} onClick={()=>setLibEditForm(p=>({...p,measure:"reps"}))}>חזרות</button>
+                        <button className={"seg-btn"+(libEditForm.measure==="time"?" active":"")} onClick={()=>setLibEditForm(p=>({...p,measure:"time"}))}>⏱ זמן</button>
+                      </div>
+                      <div style={{flex:1.4}} className="seg-toggle">
+                        <button className={"seg-btn"+(libEditForm.load==="kg"?" active":"")} onClick={()=>setLibEditForm(p=>({...p,load:"kg"}))}>ק״ג</button>
+                        <button className={"seg-btn"+(libEditForm.load==="text"?" active":"")} onClick={()=>setLibEditForm(p=>({...p,load:"text"}))}>עומס</button>
+                        <button className={"seg-btn"+(libEditForm.load==="none"?" active":"")} onClick={()=>setLibEditForm(p=>({...p,load:"none"}))}>ללא</button>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:6}}>
+                      <button className="today-btn" style={{flex:1}} onClick={saveLibEdit}>💾 שמור</button>
+                      <button className="add-set-btn" style={{flex:1,marginTop:0}} onClick={()=>setLibEditId(null)}>ביטול</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="lib-row" key={e.id} onClick={()=>{setLibEditId(e.id);setLibEditForm({name:e.name,measure:e.measure||"reps",load:e.load||"kg"});}}>
+                    <div className="lib-row-name">{e.name}</div>
+                    <span className={"badge-mini"+(e.measure==="time"?" time":"")}>{e.measure==="time"?"⏱ זמן":"חזרות"}</span>
+                    <span className={"badge-mini"+(e.load==="kg"?" kg":e.load==="text"?" loadtxt":"")}>{e.load==="kg"?"ק״ג":e.load==="text"?"עומס":"—"}</span>
+                    <button className="editor-ex-del" onClick={ev=>{ev.stopPropagation();deleteLibEntry(e.id);}}>🗑</button>
+                  </div>
+                ))}
+            </div>}
+          </div>
+
+          <div className="admin-card">
             <div className="admin-collapse-header" onClick={()=>setAdminCyclesOpen(p=>!p)}>
               <h3>📊 סייקלים קיימים ({cycles.length})</h3>
               <span style={{color:"var(--text3)",fontSize:18}}>{adminCyclesOpen?"▾":"◂"}</span>
             </div>
-            {adminCyclesOpen && <>
+            {adminCyclesOpen && <React.Fragment>
               <p style={{fontSize:11,color:"var(--text3)",margin:"8px 0"}}>לחצו על סייקל כדי לערוך תרגילים</p>
               {cycles.length ? cycles.map((c,ci)=><div className="cycle-card" key={c.id} style={{margin:"8px 0",cursor:"pointer",opacity:ci===0?1:ci===1?.75:.5}} onClick={()=>startEditCycle(c)}>
                 <div>
                   <div className="cycle-name">{c.name} ✏️{ci===0 && <span style={{fontSize:10,color:"var(--green)",marginRight:6}}>● נוכחי</span>}</div>
-                  <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"+(c.coachName?" · "+c.coachName:"")}</div>
+                  <div className="cycle-meta">{(c.weeks||[]).length+" שבועות"}</div>
                 </div>
                 <button className="cycle-del" onClick={(e)=>{e.stopPropagation();deleteCycle(c.id);}}>🗑</button>
               </div>) : <p>אין סייקלים</p>}
-            </>}
+            </React.Fragment>}
           </div>
 
           <div className="admin-card">
@@ -1373,7 +1585,7 @@ function App() {
               <h3>👥 משתמשים ({allUsers.length})</h3>
               <span style={{color:"var(--text3)",fontSize:18}}>{adminUsersOpen?"▾":"◂"}</span>
             </div>
-            {adminUsersOpen && <>
+            {adminUsersOpen && <React.Fragment>
               <input className="user-search" type="text" placeholder="🔍 חיפוש לפי שם או מייל..." value={userSearch} onChange={e=>setUserSearch(e.target.value)} />
               {allUsers.filter(u=>{
                 var q = userSearch.trim().toLowerCase();
@@ -1387,11 +1599,11 @@ function App() {
                 </div>
                 <span className={"user-badge "+(u.role||"trainee")}>{u.role==="admin"?"אדמין":"מתאמן/ת"}</span>
               </div>)}
-            </>}
+            </React.Fragment>}
           </div>
         </div>}
 
-        {/* ===== CYCLE EDITOR ===== */}
+        {/* CYCLE EDITOR */}
         {admin && editCycle && <div>
           <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:10}}>
             <button className="back-btn" onClick={()=>setEditCycle(null)}>→</button>
@@ -1412,19 +1624,22 @@ function App() {
               if (!td) return null;
               var exArr = td.exercises||[];
               return <div className="editor-type" key={tNum}>
-                <div className="editor-type-header">{TI["training"+tNum]+" "+TN["training"+tNum]+" ("+exArr.length+")"}</div>
+                <div className="editor-type-header">{TI["training"+tNum]+" "+(td.title||TN["training"+tNum])+" ("+exArr.length+")"}</div>
                 {exArr.map((ex,ei) => <div className="editor-ex" key={ei}>
                   <span style={{fontSize:11,color:"var(--accent)",minWidth:28}}>{ex.code}</span>
-                  <input className="editor-ex-input" value={ex.name} onChange={e=>{
+                  <input className="editor-ex-input" value={ex.name} placeholder="שם ראשי" onChange={e=>{
                     setEditCycle(p=>{var n=JSON.parse(JSON.stringify(p));n.weeks[wi].trainings[tNum].exercises[ei].name=e.target.value;return n;});
+                  }} />
+                  <input className="editor-ex-input" style={{flex:.8}} value={ex.variation||""} placeholder="וריאציה" onChange={e=>{
+                    setEditCycle(p=>{var n=JSON.parse(JSON.stringify(p));n.weeks[wi].trainings[tNum].exercises[ei].variation=e.target.value;return n;});
                   }} />
                   <button className="editor-ex-del" onClick={()=>{
                     setEditCycle(p=>{var n=JSON.parse(JSON.stringify(p));n.weeks[wi].trainings[tNum].exercises.splice(ei,1);return n;});
                   }}>✕</button>
                 </div>)}
-                {(td.cardio||[]).length > 0 && <div style={{padding:"6px 14px",borderTop:"1px solid var(--bg4)"}}>
-                  <div style={{fontSize:11,color:"var(--orange)",fontWeight:700}}>{(td.cardioType||"tabata").toUpperCase()}</div>
-                  {td.cardio.map((ex,ei)=><div style={{fontSize:12,color:"var(--text2)",paddingRight:8,marginTop:2}} key={ei}>{(ei+1)+". "+ex}</div>)}
+                {td.cardio && (td.cardio.exercises||[]).length > 0 && <div style={{padding:"6px 14px",borderTop:"1px solid var(--bg4)"}}>
+                  <div style={{fontSize:11,color:"var(--orange)",fontWeight:700}}>{(td.cardio.type||"tabata").toUpperCase()}</div>
+                  {td.cardio.exercises.map((exName,ei)=><div style={{fontSize:12,color:"var(--text2)",paddingRight:8,marginTop:2}} key={ei}>{(ei+1)+". "+exName}</div>)}
                 </div>}
               </div>;
             })}
@@ -1437,7 +1652,7 @@ function App() {
         </div>}
 
         <div className="storage-info" style={{marginTop:16}}>
-          <strong>{logs.length}</strong> אימונים שמורים<br/>
+          <strong>{logs.length}</strong> אימונים שמורים · <strong>{lib.length}</strong> תרגילים במאגר<br/>
           הנתונים נשמרים ב-Firebase (ענן) ונגישים מכל מכשיר.
         </div>
 
@@ -1484,26 +1699,9 @@ function App() {
               <button className="today-btn" onClick={exportUserCsv}>📥 ייצוא CSV</button>
             </div>
             {dashLogs.map(log=><div className="hist-card" key={log.id}>
-              <div className="hist-date">{log.date+" · "+log.time}</div>
-              <div className="hist-info">{TN[log.type]||log.type}{" · "+log.cycleName+" · שבוע "+log.weekNum}</div>
-              <div className="hist-detail">
-                {(log.exercises||[]).map((ex,i)=><div key={i} style={{marginTop:i?6:0}}>
-                  <strong>{(ex.code?" ["+ex.code+"] ":"")+(ex.name||"").substring(0,50)}</strong>
-                  {ex.targetReps && <span style={{color:"var(--text3)",fontSize:10}}>{" ("+ex.targetReps+")"}</span>}<br/>
-                  {(ex.sets||[]).map((s,si)=><span key={si}>
-                    {[s.weight?s.weight+"kg":"", s.reps?"×"+s.reps:"", s.rir?"RIR "+s.rir:""].filter(Boolean).join(" ")}
-                    {s.variant && <span className="hist-note">{" "+s.variant}</span>}
-                    {s.notes && <span className="hist-note">{" — "+s.notes}</span>}
-                    {si<ex.sets.length-1?" | ":""}
-                  </span>)}
-                </div>)}
-                {log.cardio && <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid var(--bg4)"}}>
-                  <span style={{color:"var(--orange)",fontWeight:700,fontSize:11}}>{(log.cardio.type||"").toUpperCase()+" "}</span>
-                  {log.cardio.workTime && <span>{"⏱ "+log.cardio.workTime} </span>}
-                  {log.cardio.restTime && <span>{"😮‍💨 "+log.cardio.restTime}</span>}
-                  {log.cardio.notes && <span className="hist-note">{" — "+log.cardio.notes}</span>}
-                </div>}
-              </div>
+              <div className="hist-date">{log.date+(log.time?" · "+log.time:"")}{log.status==="active" && <span className="active-badge">פעיל</span>}</div>
+              <div className="hist-info">{(TN[log.type]||log.type)+" · "+(log.cycleName||"")+" · שבוע "+(log.weekNum||"")+" · "+(log.location==="gym"?"סטודיו":"קיר")}</div>
+              {renderLogDetail(log)}
             </div>)}
           </div>}
         </div>}
@@ -1511,7 +1709,7 @@ function App() {
 
       {/* ===== NAV ===== */}
       <div className="nav"><div className="nav-inner">
-        <button className={"nav-btn"+(tab==="home"?" active":"")} onClick={()=>{setTab("home");setSelType(null);}}>
+        <button className={"nav-btn"+(tab==="home"?" active":"")} onClick={()=>{setTab("home");setSelType(null);resetSession();}}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>אימון
         </button>
         <button className={"nav-btn"+(tab==="history"?" active":"")} onClick={()=>setTab("history")}>
@@ -1529,34 +1727,13 @@ function App() {
 }
 
 ReactDOM.render(React.createElement(App), document.getElementById("root"));
+
 </script>
 
 <script>
-// Register Service Worker for PWA — with auto-update so new versions
-// roll out without a hard refresh on every device.
-if ('serviceWorker' in navigator) {
-  var swRefreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    if (swRefreshing) return;
-    swRefreshing = true;
-    window.location.reload();
-  });
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js').then(function(reg) {
-      reg.update();
-      reg.addEventListener('updatefound', function() {
-        var nw = reg.installing;
-        if (!nw) return;
-        nw.addEventListener('statechange', function() {
-          // A new SW is installed and an old one is in control -> activate it now
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            nw.postMessage('skipWaiting');
-          }
-        });
-      });
-    }).catch(function(err) {
-      console.log('SW registration failed:', err);
-    });
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("sw.js").catch(function(e){console.log("SW failed:",e)});
   });
 }
 </script>
